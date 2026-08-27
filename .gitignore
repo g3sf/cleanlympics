@@ -1,0 +1,14 @@
+node_modules/
+dist/
+release/
+data/
+.env
+*.log
+*.pfx
+*.pem
+*.key
+*.cer
+*.msi
+*.msix
+packaging/work/
+outputs/
