@@ -1,14 +1,14 @@
 {
   "name": "cleanlympics-desktop-suite",
-  "version": "0.2.5-staff-beta",
+  "version": "0.3.3-staff-beta",
   "private": true,
   "workspaces": ["apps/*"],
   "scripts": {
-    "dev": "concurrently -k \"npm run dev -w @cleanlympics/server\" \"npm run dev -w @cleanlympics/desktop\"",
+    "dev": "npm run dev -w @cleanlympics/desktop",
     "build": "npm run build -w @cleanlympics/desktop",
     "dist:win": "npm run dist:win -w @cleanlympics/desktop",
-    "start:server": "npm run start -w @cleanlympics/server",
-    "test": "npm run test -w @cleanlympics/server"
+    "dist:msix": "npm run dist:msix -w @cleanlympics/desktop",
+    "test": "node --test scripts/scoring.test.mjs && node scripts/test-embedded-api.mjs"
   },
   "devDependencies": {"concurrently": "^9.2.1"}
 }

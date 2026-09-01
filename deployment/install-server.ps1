@@ -1,7 +1,10 @@
 param([string]$InstallPath="C:\CleanlympicsServer",[int]$Port=4317)
 $ErrorActionPreference="Stop"
 New-Item -ItemType Directory -Force -Path $InstallPath,"$InstallPath\data" | Out-Null
-Copy-Item -Recurse -Force "$PSScriptRoot\..\apps\server\*" $InstallPath
+# Application updates must never replace the live database or server secrets.
+New-Item -ItemType Directory -Force -Path "$InstallPath\src" | Out-Null
+Copy-Item -Recurse -Force "$PSScriptRoot\..\apps\server\src\*" "$InstallPath\src"
+Copy-Item -Force "$PSScriptRoot\..\apps\server\package.json" $InstallPath
 Push-Location $InstallPath
 npm install --omit=dev
 if (!(Test-Path ".env")) {

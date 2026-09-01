@@ -1,6 +1,6 @@
 {
   "name": "@cleanlympics/server",
-  "version": "0.2.5-staff-beta",
+  "version": "0.3.2-staff-beta",
   "type": "module",
   "main": "src/index.js",
   "scripts": {"dev":"node --watch src/index.js","start":"node src/index.js","test":"node --test src/*.test.js"},

@@ -1,0 +1,997 @@
+[
+  {
+    "id": "dusting",
+    "name": "Dusting & Cleaning",
+    "shortName": "Dusting",
+    "schedule": "Daily",
+    "icon": "dust",
+    "team": "Dusting Team",
+    "areaLabel": "Assigned portion of the org",
+    "sections": [
+      {
+        "title": "DUSTING",
+        "instruction": "Inspect and remove dust, cobwebs and dirt",
+        "items": [
+          {
+            "id": "du1",
+            "label": "Ceilings"
+          },
+          {
+            "id": "du2",
+            "label": "Walls"
+          },
+          {
+            "id": "du3",
+            "label": "Tops of desks and tables"
+          },
+          {
+            "id": "du4",
+            "label": "Desk items"
+          },
+          {
+            "id": "du5",
+            "label": "Lamps"
+          },
+          {
+            "id": "du6",
+            "label": "Shelves"
+          },
+          {
+            "id": "du7",
+            "label": "Cabinets"
+          },
+          {
+            "id": "du8",
+            "label": "Bookcases"
+          },
+          {
+            "id": "du9",
+            "label": "Windowsills"
+          },
+          {
+            "id": "du10",
+            "label": "Signage"
+          },
+          {
+            "id": "du11",
+            "label": "Thresholds"
+          },
+          {
+            "id": "du12",
+            "label": "Kick plates"
+          },
+          {
+            "id": "du13",
+            "label": "Baseboards"
+          }
+        ]
+      },
+      {
+        "title": "CLEANING",
+        "instruction": "Inspect and spot clean using Multi-Surface Cleaner",
+        "items": [
+          {
+            "id": "dc1",
+            "label": "Ceilings"
+          },
+          {
+            "id": "dc2",
+            "label": "Walls"
+          },
+          {
+            "id": "dc3",
+            "label": "Shelves"
+          },
+          {
+            "id": "dc4",
+            "label": "Cabinets"
+          },
+          {
+            "id": "dc5",
+            "label": "Bookcases"
+          },
+          {
+            "id": "dc6",
+            "label": "Windowsills"
+          },
+          {
+            "id": "dc7",
+            "label": "Thresholds"
+          },
+          {
+            "id": "dc8",
+            "label": "Signage"
+          },
+          {
+            "id": "dc9",
+            "label": "Kick plates"
+          },
+          {
+            "id": "dc10",
+            "label": "Baseboards"
+          },
+          {
+            "id": "dc11",
+            "label": "All desks and table tops"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "glass",
+    "name": "Glass Cleaning",
+    "shortName": "Glass",
+    "schedule": "Daily",
+    "icon": "▱",
+    "team": "Glass Cleaning Team",
+    "areaLabel": "Assigned portion of the org",
+    "sections": [
+      {
+        "title": "GLASS SURFACES",
+        "instruction": "Clean interior glass and remove dirt and D7 residue",
+        "items": [
+          {
+            "id": "gl1",
+            "label": "Glass walls"
+          },
+          {
+            "id": "gl2",
+            "label": "Glass partitions"
+          },
+          {
+            "id": "gl3",
+            "label": "Glass doors"
+          },
+          {
+            "id": "gl4",
+            "label": "Glass tables"
+          },
+          {
+            "id": "gl5",
+            "label": "Pictures and poster frames"
+          },
+          {
+            "id": "gl6",
+            "label": "TV screens using a microfiber suede cloth"
+          },
+          {
+            "id": "gl7",
+            "label": "Mirrors"
+          }
+        ]
+      },
+      {
+        "title": "DETAIL CLEANING",
+        "instruction": "Use additional treatment where needed",
+        "items": [
+          {
+            "id": "gd1",
+            "label": "If dirt remains, use ammonia solution"
+          },
+          {
+            "id": "gd2",
+            "label": "Remove water spots or mineral deposits with distilled white vinegar"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "floor",
+    "name": "Hard Floor Cleaning",
+    "shortName": "Hard Floor",
+    "schedule": "Daily",
+    "icon": "▦",
+    "team": "Hard Floor Team",
+    "areaLabel": "Assigned portion of the org",
+    "sections": [
+      {
+        "title": "HARD FLOORS",
+        "instruction": "Clean all assigned hard-floor spaces",
+        "items": [
+          {
+            "id": "hf1",
+            "label": "Move furniture or rugs out of the way as necessary"
+          },
+          {
+            "id": "hf2",
+            "label": "Remove debris from the floor"
+          },
+          {
+            "id": "hf3",
+            "label": "Scrub the floor"
+          },
+          {
+            "id": "hf4",
+            "label": "Use a microfiber mop for tight spaces"
+          },
+          {
+            "id": "hf5",
+            "label": "Remove spots or heavy soil using Multi-Surface Cleaner"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "restroom",
+    "name": "Restroom Deep Cleaning & Sanitization",
+    "shortName": "Restrooms",
+    "schedule": "Daily",
+    "icon": "WC",
+    "team": "Restroom Team",
+    "areaLabel": "Assigned restroom",
+    "sections": [
+      {
+        "title": "TOILETS & URINALS",
+        "instruction": "Deep clean and sanitize fixtures",
+        "items": [
+          {
+            "id": "rt1",
+            "label": "Spray Multi-Surface Cleaner on toilets"
+          },
+          {
+            "id": "rt2",
+            "label": "Spray Multi-Surface Cleaner on urinals"
+          },
+          {
+            "id": "rt3",
+            "label": "Scrub toilet bowls with a toilet brush"
+          },
+          {
+            "id": "rt4",
+            "label": "Scrub urinals with a toilet brush"
+          },
+          {
+            "id": "rt5",
+            "label": "Remove stains with Bar Keepers Friend"
+          },
+          {
+            "id": "rt6",
+            "label": "Sanitize the brush head"
+          },
+          {
+            "id": "rt7",
+            "label": "Dry toilets and urinals with disposable wipes"
+          },
+          {
+            "id": "rt8",
+            "label": "Discard used gloves, sanitize hands and put on new gloves"
+          }
+        ]
+      },
+      {
+        "title": "DUSTING",
+        "instruction": "Dust restroom surfaces",
+        "items": [
+          {
+            "id": "rd1",
+            "label": "Stall partitions"
+          },
+          {
+            "id": "rd2",
+            "label": "Toilet-paper dispenser"
+          },
+          {
+            "id": "rd3",
+            "label": "Paper-towel dispenser"
+          },
+          {
+            "id": "rd4",
+            "label": "Counters"
+          },
+          {
+            "id": "rd5",
+            "label": "Baseboards"
+          },
+          {
+            "id": "rd6",
+            "label": "A/C vents (weekly)"
+          },
+          {
+            "id": "rd7",
+            "label": "Ceilings (weekly)"
+          },
+          {
+            "id": "rd8",
+            "label": "Walls (weekly)"
+          }
+        ]
+      },
+      {
+        "title": "SURFACES",
+        "instruction": "Clean, sanitize and restock",
+        "items": [
+          {
+            "id": "rs1",
+            "label": "Spray Multi-Surface Cleaner on all surfaces"
+          },
+          {
+            "id": "rs2",
+            "label": "Starting with sinks, clean all surfaces"
+          },
+          {
+            "id": "rs3",
+            "label": "Spray undiluted D7 on all surfaces, including toilets and urinals"
+          },
+          {
+            "id": "rs4",
+            "label": "Let D7 sit for 10 minutes"
+          },
+          {
+            "id": "rs5",
+            "label": "Restock all restroom supplies while D7 sits"
+          },
+          {
+            "id": "rs6",
+            "label": "Remove D7 residue from toilets and urinals after 10 minutes"
+          },
+          {
+            "id": "rs7",
+            "label": "Discard used gloves, sanitize hands and put on new gloves"
+          },
+          {
+            "id": "rs8",
+            "label": "Remove D7 residue from all surfaces; use microfiber suede cloth on chrome"
+          },
+          {
+            "id": "rs9",
+            "label": "Clean mirrors with microfiber glass cloths and distilled water"
+          },
+          {
+            "id": "rs10",
+            "label": "Empty trash"
+          }
+        ]
+      },
+      {
+        "title": "FLOOR",
+        "instruction": "Clean and sanitize the restroom floor",
+        "items": [
+          {
+            "id": "rf1",
+            "label": "Remove floor debris with a clean, dry microfiber mop"
+          },
+          {
+            "id": "rf2",
+            "label": "Clean floor with Multi-Surface Cleaner and a floor scrubber"
+          },
+          {
+            "id": "rf3",
+            "label": "Clean areas not reached with a microfiber mop"
+          },
+          {
+            "id": "rf4",
+            "label": "Remove mop pad"
+          },
+          {
+            "id": "rf5",
+            "label": "Clean floor with D7 and a microfiber mop"
+          },
+          {
+            "id": "rf6",
+            "label": "Remove mop pad"
+          },
+          {
+            "id": "rf7",
+            "label": "Return cleaning supplies and tools"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "shredding",
+    "name": "Shredding Removal",
+    "shortName": "Shredding",
+    "schedule": "Daily",
+    "icon": "▥",
+    "team": "Shredding Team",
+    "areaLabel": "Assigned route or floors",
+    "sections": [
+      {
+        "title": "SHREDDING",
+        "instruction": "Securely collect and process shredding",
+        "items": [
+          {
+            "id": "sh1",
+            "label": "Collect shredding from predetermined central locations on each floor"
+          },
+          {
+            "id": "sh2",
+            "label": "Turn on the machine"
+          },
+          {
+            "id": "sh3",
+            "label": "Shred all shredding particles"
+          },
+          {
+            "id": "sh4",
+            "label": "Turn off the machine"
+          }
+        ]
+      },
+      {
+        "title": "SHREDDING ROOM",
+        "instruction": "Clean and reset the shredding room",
+        "items": [
+          {
+            "id": "sr1",
+            "label": "Remove full shred bag"
+          },
+          {
+            "id": "sr2",
+            "label": "Replace shred bag"
+          },
+          {
+            "id": "sr3",
+            "label": "Dust shredding machine"
+          },
+          {
+            "id": "sr4",
+            "label": "Sweep shredding room"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "trash",
+    "name": "Trash Removal",
+    "shortName": "Trash",
+    "schedule": "Daily",
+    "icon": "▰",
+    "team": "Trash Removal Team",
+    "areaLabel": "Assigned route or floors",
+    "sections": [
+      {
+        "title": "TRASH REMOVAL",
+        "instruction": "Collect, dispose, clean and return receptacles",
+        "items": [
+          {
+            "id": "tr1",
+            "label": "Collect filled mobile trash receptacles from predetermined central locations"
+          },
+          {
+            "id": "tr2",
+            "label": "Dispose of all trash in an outside receptacle or dumpster"
+          },
+          {
+            "id": "tr3",
+            "label": "Clean and sanitize mobile trash receptacles"
+          },
+          {
+            "id": "tr4",
+            "label": "Replace liners"
+          },
+          {
+            "id": "tr5",
+            "label": "Return mobile trash receptacles to their proper locations"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "upholstery",
+    "name": "Upholstery Cleaning",
+    "shortName": "Upholstery",
+    "schedule": "Weekly route",
+    "icon": "▰▰",
+    "team": "Upholstery Team",
+    "areaLabel": "Assigned portion of the org for this day",
+    "weekly": true,
+    "sections": [
+      {
+        "title": "TODAY'S UPHOLSTERY ROUTE",
+        "instruction": "Vacuum all upholstery and fabrics in each assigned space",
+        "items": [
+          {
+            "id": "up1",
+            "label": "Chairs"
+          },
+          {
+            "id": "up2",
+            "label": "Couches, sofas and lounge chairs"
+          },
+          {
+            "id": "up3",
+            "label": "Curtains"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vacuum",
+    "name": "Vacuum Cleaning",
+    "shortName": "Vacuuming",
+    "schedule": "Daily",
+    "icon": "◒",
+    "team": "Carpet Vacuuming Team",
+    "areaLabel": "Assigned portion of the org",
+    "sections": [
+      {
+        "title": "PREPARATION",
+        "instruction": "Prepare each assigned carpeted space",
+        "items": [
+          {
+            "id": "vp1",
+            "label": "Move furniture or chairs out of the way as necessary"
+          },
+          {
+            "id": "vp2",
+            "label": "Remove debris from the floor"
+          },
+          {
+            "id": "vp3",
+            "label": "Remove large particles from the floor"
+          }
+        ]
+      },
+      {
+        "title": "VACUUMING",
+        "instruction": "Vacuum and finish the assigned spaces",
+        "items": [
+          {
+            "id": "vv1",
+            "label": "Vacuum carpets"
+          },
+          {
+            "id": "vv2",
+            "label": "Use a crevice tool on corners and carpet edges as necessary"
+          },
+          {
+            "id": "vv3",
+            "label": "Handle spots or stains with the spot extractor"
+          },
+          {
+            "id": "vv4",
+            "label": "Put moved furniture or chairs back in place"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dustingWeekly",
+    "name": "Dusting & Cleaning Weekly",
+    "shortName": "Dusting Weekly",
+    "schedule": "Weekly route",
+    "icon": "dust",
+    "team": "Dusting Weekly Team",
+    "areaLabel": "Assigned portion of the org for this day",
+    "weekly": true,
+    "sections": [
+      {
+        "title": "HARD-TO-REACH DUSTING",
+        "instruction": "Dust each hard-to-reach area in the assigned spaces",
+        "items": [
+          {
+            "id": "dw1",
+            "label": "Light fixtures"
+          },
+          {
+            "id": "dw2",
+            "label": "Ceiling vents"
+          },
+          {
+            "id": "dw3",
+            "label": "Ceilings, as needed"
+          },
+          {
+            "id": "dw4",
+            "label": "Walls, as needed"
+          },
+          {
+            "id": "dw5",
+            "label": "High ledges"
+          },
+          {
+            "id": "dw6",
+            "label": "Blinds"
+          },
+          {
+            "id": "dw7",
+            "label": "Inside drawers"
+          },
+          {
+            "id": "dw8",
+            "label": "Behind furniture"
+          },
+          {
+            "id": "dw9",
+            "label": "Sides of furniture"
+          },
+          {
+            "id": "dw10",
+            "label": "Undersides of furniture"
+          },
+          {
+            "id": "dw11",
+            "label": "Doors and frames"
+          },
+          {
+            "id": "dw12",
+            "label": "Books"
+          }
+        ]
+      },
+      {
+        "title": "HARD-TO-REACH CLEANING",
+        "instruction": "Spot clean each applicable area",
+        "items": [
+          {
+            "id": "dwc1",
+            "label": "Light fixtures"
+          },
+          {
+            "id": "dwc2",
+            "label": "Ceilings"
+          },
+          {
+            "id": "dwc3",
+            "label": "Walls"
+          },
+          {
+            "id": "dwc4",
+            "label": "Sides of furniture"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cafeDaily",
+    "name": "Café Cleaning Daily",
+    "shortName": "Café Daily",
+    "schedule": "Daily · split shifts",
+    "icon": "cafe",
+    "team": "Café Crew",
+    "areaLabel": "Café area or station",
+    "sections": [
+      {
+        "title": "MORNING SHIFT · UPKEEP",
+        "instruction": "Maintain the café throughout the day",
+        "items": [
+          {
+            "id": "cdm1",
+            "label": "Remove debris and trash from tables"
+          },
+          {
+            "id": "cdm2",
+            "label": "Clean and sanitize tables"
+          },
+          {
+            "id": "cdm3",
+            "label": "Clean and sanitize chairs"
+          },
+          {
+            "id": "cdm4",
+            "label": "Clean and sanitize counters"
+          },
+          {
+            "id": "cdm5",
+            "label": "Clean and sanitize food-service equipment"
+          },
+          {
+            "id": "cdm6",
+            "label": "Clean and sanitize work surfaces"
+          },
+          {
+            "id": "cdm7",
+            "label": "Clean espresso steam wand after every use"
+          },
+          {
+            "id": "cdm8",
+            "label": "Clean dishes and utensils after each use"
+          },
+          {
+            "id": "cdm9",
+            "label": "Spot clean refrigerator and freezer interiors"
+          },
+          {
+            "id": "cdm10",
+            "label": "Clean glass with distilled water and microfiber glass cloth"
+          },
+          {
+            "id": "cdm11",
+            "label": "Sweep floor as necessary"
+          },
+          {
+            "id": "cdm12",
+            "label": "Spot clean floor with Multi-Surface Cleaner and microfiber mop"
+          }
+        ]
+      },
+      {
+        "title": "EVENING SHIFT · END OF DAY",
+        "instruction": "Deep clean and sanitize the café at closing",
+        "items": [
+          {
+            "id": "cde1",
+            "label": "Remove food items from areas being cleaned"
+          },
+          {
+            "id": "cde2",
+            "label": "Remove debris and trash from tables"
+          },
+          {
+            "id": "cde3",
+            "label": "Fully clean food-preparation areas with Multi-Surface Cleaner"
+          },
+          {
+            "id": "cde4",
+            "label": "Apply diluted D7 and allow 10 minutes dwell time"
+          },
+          {
+            "id": "cde5",
+            "label": "Empty and sanitize trash receptacles and replace liners"
+          },
+          {
+            "id": "cde6",
+            "label": "Change gloves and wash hands"
+          },
+          {
+            "id": "cde7",
+            "label": "Rinse surfaces with water"
+          },
+          {
+            "id": "cde8",
+            "label": "Wipe surfaces dry"
+          },
+          {
+            "id": "cde9",
+            "label": "Cover or store fresh food-display items"
+          },
+          {
+            "id": "cde10",
+            "label": "Dispose of unused coffee or beverages and clean containers"
+          },
+          {
+            "id": "cde11",
+            "label": "Wash and sanitize serving tools and utensils"
+          },
+          {
+            "id": "cde12",
+            "label": "Clean and polish sinks and remove water spots"
+          },
+          {
+            "id": "cde13",
+            "label": "Clean floor with Multi-Surface Cleaner and i-mop"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cafeWeekly",
+    "name": "Café Cleaning Weekly",
+    "shortName": "Café Weekly",
+    "schedule": "Weekly · split shifts",
+    "icon": "cafe",
+    "team": "Café Crew",
+    "areaLabel": "Café weekly assignment",
+    "weekly": true,
+    "sections": [
+      {
+        "title": "MORNING PERSON · WEEKLY PART",
+        "instruction": "Complete the assigned front-of-house and cold-storage work",
+        "items": [
+          {
+            "id": "cwm1",
+            "label": "Dust and clean ceiling"
+          },
+          {
+            "id": "cwm2",
+            "label": "Dust and clean vents"
+          },
+          {
+            "id": "cwm3",
+            "label": "Dust and clean high ledges"
+          },
+          {
+            "id": "cwm4",
+            "label": "Dust and clean hanging lights"
+          },
+          {
+            "id": "cwm5",
+            "label": "Dust and clean furniture"
+          },
+          {
+            "id": "cwm6",
+            "label": "Dust and clean shelving"
+          },
+          {
+            "id": "cwm7",
+            "label": "Dust and clean baseboards"
+          },
+          {
+            "id": "cwm8",
+            "label": "Dust and clean walls"
+          },
+          {
+            "id": "cwm9",
+            "label": "Clean table and chair surfaces and undersides"
+          },
+          {
+            "id": "cwm10",
+            "label": "Clean refrigerator interiors, shelves and seals; replace contents"
+          },
+          {
+            "id": "cwm11",
+            "label": "Clean refrigerator exteriors"
+          },
+          {
+            "id": "cwm12",
+            "label": "Empty, clean and reset pastry displays"
+          },
+          {
+            "id": "cwm13",
+            "label": "Clean and polish stainless-steel surfaces"
+          }
+        ]
+      },
+      {
+        "title": "EVENING PERSON · WEEKLY PART",
+        "instruction": "Complete the assigned equipment, drain and floor work",
+        "items": [
+          {
+            "id": "cwe1",
+            "label": "Clean cold ovens, microwaves and similar appliances per manufacturer instructions"
+          },
+          {
+            "id": "cwe2",
+            "label": "Clean dishwashing machine interior per manufacturer instructions"
+          },
+          {
+            "id": "cwe3",
+            "label": "Clear dishwasher, sink and ice-machine drains"
+          },
+          {
+            "id": "cwe4",
+            "label": "Clean all sinks and drying racks"
+          },
+          {
+            "id": "cwe5",
+            "label": "Clean public and food-preparation floors, including under fridges and counters"
+          },
+          {
+            "id": "cwe6",
+            "label": "Degrease, dwell, scrub and rinse floor behind café work area"
+          }
+        ]
+      },
+      {
+        "title": "MONTHLY ADD-ON · WHEN DUE",
+        "instruction": "Complete these items during the scheduled monthly week",
+        "items": [
+          {
+            "id": "cwx1",
+            "label": "Empty, defrost and clean freezer; clean seals, air out, restart and replace food"
+          },
+          {
+            "id": "cwx2",
+            "label": "Clean ice-machine interior per manufacturer manual"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "operationsMonitor",
+    "name": "Cleaning Operations Monitor",
+    "shortName": "Ops Monitor",
+    "schedule": "Daily · oversight",
+    "icon": "monitor",
+    "team": "Cleaning Operations Monitor",
+    "areaLabel": "Cleaning period, building, or assigned inspection route",
+    "sections": [
+      {
+        "title": "PRE-CLEANING MEETING",
+        "instruction": "Verify that every team is ready and accounted for",
+        "items": [
+          {
+            "id": "omr1",
+            "label": "Attend the pre-cleaning meeting"
+          },
+          {
+            "id": "omr2",
+            "label": "Ask each Team Leader whether every assigned member is present"
+          },
+          {
+            "id": "omr3",
+            "label": "Confirm every missing member is accounted for or marked unexcused"
+          },
+          {
+            "id": "omr4",
+            "label": "Follow up with missing members and direct them to their assigned team"
+          },
+          {
+            "id": "omr5",
+            "label": "Confirm every Team Leader knows the team’s assigned duties"
+          }
+        ]
+      },
+      {
+        "title": "CHECKLIST & UNIFORM READINESS",
+        "instruction": "Confirm teams have the tools and clothing required to begin",
+        "items": [
+          {
+            "id": "ome1",
+            "label": "Verify every team has its correct checklist in hardcopy or digital form"
+          },
+          {
+            "id": "ome2",
+            "label": "Confirm Team Leaders are actively using the checklist to direct and record work"
+          },
+          {
+            "id": "ome3",
+            "label": "Verify all team members are wearing the required cleaning coveralls"
+          },
+          {
+            "id": "ome4",
+            "label": "Direct any person without the required checklist or coveralls to correct the issue"
+          }
+        ]
+      },
+      {
+        "title": "ACTIVE PARTICIPATION",
+        "instruction": "Observe teams while cleaning is underway",
+        "items": [
+          {
+            "id": "omp1",
+            "label": "Make rounds through all active team areas"
+          },
+          {
+            "id": "omp2",
+            "label": "Confirm each member is performing an assigned duty"
+          },
+          {
+            "id": "omp3",
+            "label": "Identify goofing off, slacking, or unproductive behavior"
+          },
+          {
+            "id": "omp4",
+            "label": "Prompt non-participating members to return to work"
+          },
+          {
+            "id": "omp5",
+            "label": "Notify the responsible Team Leader of repeated participation problems"
+          }
+        ]
+      },
+      {
+        "title": "QUALITY INSPECTION",
+        "instruction": "Inspect completed spaces and route corrections to the Team Leader",
+        "items": [
+          {
+            "id": "omq1",
+            "label": "Inspect the areas reported as completed"
+          },
+          {
+            "id": "omq2",
+            "label": "Confirm visible surfaces and assigned spaces were cleaned properly"
+          },
+          {
+            "id": "omq3",
+            "label": "Compare completed work against the team’s checklist requirements"
+          },
+          {
+            "id": "omq4",
+            "label": "Tell the responsible Team Leader about any missed or poorly cleaned areas"
+          },
+          {
+            "id": "omq5",
+            "label": "Verify the Team Leader assigns and completes the needed correction"
+          },
+          {
+            "id": "omq6",
+            "label": "Record any unresolved quality issue for Master Administrator review"
+          }
+        ]
+      }
+    ]
+  }
+]

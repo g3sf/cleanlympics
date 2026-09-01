@@ -26,7 +26,8 @@ const iconPhotos:Record<string,string>={glass:"glass.jfif",floor:"floor.jfif",re
 const emptyWeekData=days.map(day=>({day,score:0,done:0,missed:[]}));
 const isoToday=()=>{const now=new Date(),offset=now.getTimezoneOffset();return new Date(now.getTime()-offset*60000).toISOString().slice(0,10)};
 const displayDate=(value:string)=>new Date(`${value}T12:00:00`).toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-const weekBounds=(value:string)=>{const chosen=new Date(`${value}T12:00:00`),day=(chosen.getDay()+6)%7,monday=new Date(chosen);monday.setDate(chosen.getDate()-day);const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);const iso=(date:Date)=>date.toISOString().slice(0,10);return{start:iso(monday),end:iso(sunday),label:`${monday.toLocaleDateString(undefined,{month:'short',day:'numeric'})}–${sunday.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}`}};
+const weekBounds=(value:string,seasonStart='2026-08-27')=>{const chosen=new Date(`${value}T12:00:00`),anchor=new Date(`${seasonStart}T12:00:00`),elapsed=Math.floor((chosen.getTime()-anchor.getTime())/86400000),offset=((elapsed%7)+7)%7,start=new Date(chosen);start.setDate(chosen.getDate()-offset);const end=new Date(start);end.setDate(start.getDate()+6);const iso=(date:Date)=>date.toISOString().slice(0,10);return{start:iso(start),end:iso(end),label:`${start.toLocaleDateString(undefined,{month:'short',day:'numeric'})}–${end.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}`}};
+const saveCurrentViewAsPdf=async(name:string)=>{const api=(window as any).cleanlympics;if(!api?.savePdf){window.print();return}const result=await api.savePdf(name);if(result?.saved)window.alert(`PDF saved to ${result.path}`)};
 function ChecklistIcon({checklist}:{checklist:Checklist}){if(checklist.icon==="dust")return <div className="cleaning-icon">
 <img className="mop-photo" src="./icons/dust-mop.jfif" alt=""/>
 <img className="bottle-photo" src="./icons/spray-bottle.jfif" alt=""/>
@@ -118,32 +119,51 @@ function SharedDataEditor(){
  const reload=async()=>{const next=await refreshBootstrap();setData({...next});setMessage('Saved to the shared database')};
  const rename=async(kind:'teams'|'members'|'checklists',row:any)=>{const value=window.prompt(`New ${kind==='members'?'member':'name'}:`,row.name);if(!value?.trim())return;if(kind==='teams')await request(`/api/teams/${row.id}`,{method:'PUT',body:JSON.stringify({...row,name:value.trim()})});if(kind==='members')await request(`/api/members/${row.id}`,{method:'PUT',body:JSON.stringify({...row,name:value.trim()})});if(kind==='checklists')await request(`/api/checklists/${row.id}`,{method:'PUT',body:JSON.stringify({...row,name:value.trim()})});await reload()};
  const addMember=async()=>{const team=data.teams[0];const name=window.prompt('New team member name:');if(!name?.trim()||!team)return;await request('/api/members',{method:'POST',body:JSON.stringify({team_id:team.id,name:name.trim()})});await reload()};
- return <section className="admin-card shared-editor"><div className="admin-card-head"><div><p className="eyebrow">SHARED DATABASE EDITOR</p><h2>Editable staff beta information</h2><span>Use Edit to replace the sample names. Changes appear on every connected desktop.</span></div><button onClick={addMember}>+ Add member</button></div>{message&&<div className="saved-report">✓ {message}</div>}<div className="shared-editor-columns"><div><h3>Teams</h3>{data.teams.map((row:any)=><button key={row.id} onClick={()=>rename('teams',row)}><b>{row.name}</b><small>{row.division} · {row.schedule}</small><em>Edit</em></button>)}</div><div><h3>Members</h3>{data.members.map((row:any)=><button key={row.id} onClick={()=>rename('members',row)}><b>{row.name}</b><small>{data.teams.find((t:any)=>t.id===row.team_id)?.name}</small><em>Edit</em></button>)}</div><div><h3>Checklist names</h3>{data.checklists.map((row:any)=><button key={row.id} onClick={()=>rename('checklists',row)}><b>{row.name}</b><small>{row.schedule}</small><em>Edit</em></button>)}</div></div></section>
+ return <section className="admin-card shared-editor"><div className="admin-card-head"><div><p className="eyebrow">SHARED DATABASE EDITOR</p><h2>Editable staff beta information</h2><span>Edit the current team and checklist information. Changes appear on every connected desktop.</span></div><button onClick={addMember}>+ Add member</button></div>{message&&<div className="saved-report">✓ {message}</div>}<div className="shared-editor-columns"><div><h3>Teams</h3>{data.teams.map((row:any)=><button key={row.id} onClick={()=>rename('teams',row)}><b>{row.name}</b><small>{row.division} · {row.schedule}</small><em>Edit</em></button>)}</div><div><h3>Members</h3>{data.members.map((row:any)=><button key={row.id} onClick={()=>rename('members',row)}><b>{row.name}</b><small>{data.teams.find((t:any)=>t.id===row.team_id)?.name}</small><em>Edit</em></button>)}</div><div><h3>Checklist names</h3>{data.checklists.map((row:any)=><button key={row.id} onClick={()=>rename('checklists',row)}><b>{row.name}</b><small>{row.schedule}</small><em>Edit</em></button>)}</div></div></section>
 }
 function SeasonEditor(){
- const initial=session.bootstrap?.season||{name:'Launch Season',theme:'The Launch of the Cleanlympics',start_date:'2026-09-01',end_date:'2026-09-30',current_week:1};
+ const initial=session.bootstrap?.season||{name:'Launch Season',theme:'The Launch of the Cleanlympics',start_date:'2026-08-27',end_date:'2026-10-01',current_week:1};
  const [form,setForm]=useState({...initial}),[message,setMessage]=useState('');
  const save=async()=>{await request('/api/settings/season',{method:'PUT',body:JSON.stringify(form)});await refreshBootstrap();setMessage('Season settings saved for every connected desktop.')};
  const totalWeeks=Math.max(1,Math.ceil((new Date(`${form.end_date}T12:00:00`).getTime()-new Date(`${form.start_date}T12:00:00`).getTime()+86400000)/604800000));
- return <section className="admin-card season-editor"><div className="admin-card-head"><div><p className="eyebrow">SEASON CONTROL</p><h2>Set the competition period and theme</h2><span>The first beta season starts as Launch Season. You can rename or extend it at any time.</span></div></div>{message&&<div className="saved-report">✓ {message}</div>}<div className="form-grid"><label>Season name<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label><label>Season theme<input value={form.theme} onChange={e=>setForm({...form,theme:e.target.value})}/></label><label>Start date<input type="date" value={form.start_date} onChange={e=>setForm({...form,start_date:e.target.value})}/></label><label>End date<input type="date" value={form.end_date} min={form.start_date} onChange={e=>setForm({...form,end_date:e.target.value})}/></label><label>Current week<input type="number" min="1" max={totalWeeks} value={form.current_week} onChange={e=>setForm({...form,current_week:Number(e.target.value)})}/><small>{totalWeeks} week{totalWeeks===1?'':'s'} in the selected period</small></label></div><button className="primary-action" onClick={save}>Save season settings</button></section>
+ return <section className="admin-card season-editor"><div className="admin-card-head"><div><p className="eyebrow">SEASON CONTROL</p><h2>Set the competition period and theme</h2><span>Rename, extend, or reschedule the current season at any time.</span></div></div>{message&&<div className="saved-report">✓ {message}</div>}<div className="form-grid"><label>Season name<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label><label>Season theme<input value={form.theme} onChange={e=>setForm({...form,theme:e.target.value})}/></label><label>Start date<input type="date" value={form.start_date} onChange={e=>setForm({...form,start_date:e.target.value})}/></label><label>End date<input type="date" value={form.end_date} min={form.start_date} onChange={e=>setForm({...form,end_date:e.target.value})}/></label><label>Current week<input type="number" min="1" max={totalWeeks} value={form.current_week} onChange={e=>setForm({...form,current_week:Number(e.target.value)})}/><small>{totalWeeks} week{totalWeeks===1?'':'s'} in the selected period</small></label></div><button className="primary-action" onClick={save}>Save season settings</button></section>
 }
 function PeopleAccessManager(){
- const [data,setData]=useState<any>(session.bootstrap||{teams:[],members:[],users:[],checklists:[]}),[message,setMessage]=useState('');
- const reload=async(message='Saved to the shared database')=>{const next=await refreshBootstrap();setData({...next});setMessage(message)};
- const addLeader=async()=>{const display_name=window.prompt('Team Leader full name:');if(!display_name?.trim())return;const username=window.prompt('Sign-in username:');if(!username?.trim())return;const password=window.prompt('Temporary password (at least 8 characters):','TempPass123!');if(!password)return;const teamName=window.prompt(`Assigned team (enter exactly):\n${data.teams.map((t:any)=>t.name).join('\n')}`,data.teams[0]?.name);const team=data.teams.find((t:any)=>t.name.toLowerCase()===teamName?.trim().toLowerCase());if(!team)return window.alert('Team not found.');await request('/api/users',{method:'POST',body:JSON.stringify({display_name:display_name.trim(),username:username.trim(),password,team_id:team.id})});await reload('Team Leader account created')};
- const editLeader=async(user:any)=>{const display_name=window.prompt('Team Leader full name:',user.display_name);if(!display_name?.trim())return;const username=window.prompt('Sign-in username:',user.username);if(!username?.trim())return;const teamName=window.prompt(`Assigned team (enter exactly):\n${data.teams.map((t:any)=>t.name).join('\n')}`,data.teams.find((t:any)=>t.id===user.team_id)?.name);const team=data.teams.find((t:any)=>t.name.toLowerCase()===teamName?.trim().toLowerCase());if(!team)return window.alert('Team not found.');await request(`/api/users/${user.id}`,{method:'PUT',body:JSON.stringify({display_name:display_name.trim(),username:username.trim(),team_id:team.id,active:Boolean(user.active)})});await reload()};
- const resetPassword=async(user:any)=>{const password=window.prompt(`New temporary password for ${user.display_name}:`,'TempPass123!');if(!password)return;await request(`/api/users/${user.id}/password`,{method:'PUT',body:JSON.stringify({password})});await reload('Temporary password saved')};
- const editMember=async(member:any)=>{const name=window.prompt('Member full name:',member.name);if(!name?.trim())return;const teamName=window.prompt(`Assigned team (enter exactly):\n${data.teams.map((t:any)=>t.name).join('\n')}`,data.teams.find((t:any)=>t.id===member.team_id)?.name);const team=data.teams.find((t:any)=>t.name.toLowerCase()===teamName?.trim().toLowerCase());if(!team)return window.alert('Team not found.');await request(`/api/members/${member.id}`,{method:'PUT',body:JSON.stringify({name:name.trim(),team_id:team.id})});await reload()};
- const addMember=async()=>{const name=window.prompt('New member full name:');if(!name?.trim())return;const teamName=window.prompt(`Assigned team (enter exactly):\n${data.teams.map((t:any)=>t.name).join('\n')}`,data.teams[0]?.name);const team=data.teams.find((t:any)=>t.name.toLowerCase()===teamName?.trim().toLowerCase());if(!team)return window.alert('Team not found.');await request('/api/members',{method:'POST',body:JSON.stringify({name:name.trim(),team_id:team.id})});await reload('Member added')};
- const editTeam=async(team:any)=>{const name=window.prompt('Team name:',team.name);if(!name?.trim())return;const checklistName=window.prompt(`Assigned checklist (enter exactly):\n${data.checklists.map((c:any)=>c.name).join('\n')}`,data.checklists.find((c:any)=>c.id===team.checklist_id)?.name);const checklist=data.checklists.find((c:any)=>c.name.toLowerCase()===checklistName?.trim().toLowerCase());if(!checklist)return window.alert('Checklist not found.');await request(`/api/teams/${team.id}`,{method:'PUT',body:JSON.stringify({...team,name:name.trim(),checklist_id:checklist.id})});await reload()};
+ const [data,setData]=useState<any>(session.bootstrap||{teams:[],members:[],users:[],checklists:[]}),[message,setMessage]=useState(''),[error,setError]=useState(''),[editor,setEditor]=useState<any>(null),[saving,setSaving]=useState(false);
+ const reload=async(message='Saved to the shared database')=>{const next=await refreshBootstrap();setData({...next});setMessage(message);setError('');setEditor(null)};
+ const openEditor=(kind:string,row:any=null)=>{setMessage('');setError('');if(kind==='leader')setEditor({kind,id:row?.id||null,display_name:row?.display_name||'',username:row?.username||'',password:'',team_id:String(row?.team_id||data.teams[0]?.id||''),active:row?Boolean(row.active):true});if(kind==='password')setEditor({kind,id:row.id,display_name:row.display_name,password:''});if(kind==='member')setEditor({kind,id:row?.id||null,name:row?.name||'',team_id:String(row?.team_id||data.teams[0]?.id||'')});if(kind==='team')setEditor({kind,id:row?.id||null,name:row?.name||'',division:row?.division||'Day',schedule:row?.schedule||'Mon–Fri',checklist_id:String(row?.checklist_id||data.checklists[0]?.id||'')});if(kind==='checklist')setEditor({kind,id:row?.id||null,name:row?.name||'',schedule:row?.schedule||'Daily',icon:row?.icon||'mop'})};
+ const saveEditor=async()=>{if(!editor)return;setSaving(true);setError('');try{
+   if(editor.kind==='leader'){if(!editor.display_name.trim()||!editor.username.trim()||!editor.team_id)throw new Error('Name, username and assigned team are required.');if(!editor.id&&editor.password.length<8)throw new Error('The temporary password must have at least 8 characters.');const body={display_name:editor.display_name.trim(),username:editor.username.trim(),team_id:Number(editor.team_id),active:Boolean(editor.active),...(!editor.id?{password:editor.password}:{})};await request(editor.id?`/api/users/${editor.id}`:'/api/users',{method:editor.id?'PUT':'POST',body:JSON.stringify(body)});await reload(editor.id?'Team Leader account updated':'Team Leader account created')}
+   if(editor.kind==='password'){if(editor.password.length<8)throw new Error('The new password must have at least 8 characters.');await request(`/api/users/${editor.id}/password`,{method:'PUT',body:JSON.stringify({password:editor.password})});await reload('Temporary password saved')}
+   if(editor.kind==='member'){if(!editor.name.trim()||!editor.team_id)throw new Error('Member name and assigned team are required.');await request(editor.id?`/api/members/${editor.id}`:'/api/members',{method:editor.id?'PUT':'POST',body:JSON.stringify({name:editor.name.trim(),team_id:Number(editor.team_id)})});await reload(editor.id?'Team member updated':'Team member added')}
+   if(editor.kind==='team'){if(!editor.name.trim()||!editor.checklist_id)throw new Error('Team name and assigned checklist are required.');const body={name:editor.name.trim(),division:editor.division,schedule:editor.schedule,checklist_id:Number(editor.checklist_id)};await request(editor.id?`/api/teams/${editor.id}`:'/api/teams',{method:editor.id?'PUT':'POST',body:JSON.stringify(body)});await reload(editor.id?'Team updated':'Team added')}
+   if(editor.kind==='checklist'){if(!editor.name.trim())throw new Error('Checklist name is required.');const body={name:editor.name.trim(),schedule:editor.schedule,icon:editor.icon||'mop'};await request(editor.id?`/api/checklists/${editor.id}`:'/api/checklists',{method:editor.id?'PUT':'POST',body:JSON.stringify(body)});await reload(editor.id?'Checklist updated':'Checklist added')}
+  }catch(e:any){setError(e?.message||'The change could not be saved.')}finally{setSaving(false)}};
  const leaders=(data.users||[]).filter((u:any)=>u.role==='leader');
- return <><section className="people-grid"><section className="admin-card people-list"><div className="admin-card-head"><div><p className="eyebrow">TEAM LEADER ACCESS</p><h2>Real sign-in accounts</h2></div><button onClick={addLeader}>+ Add Team Leader</button></div>{leaders.length?leaders.map((u:any)=><div className="person-line" key={u.id}><span><i>{u.display_name.split(' ').map((x:string)=>x[0]).join('').slice(0,2)}</i><b>{u.display_name}</b></span><span>{data.teams.find((t:any)=>t.id===u.team_id)?.name||'Unassigned'}</span><span>{u.username}</span><button className="reset-pass" onClick={()=>editLeader(u)}>Edit account</button><button className="reset-pass" onClick={()=>resetPassword(u)}>Reset password</button></div>):<div className="empty-detail"><span>—</span><h2>No Team Leaders entered</h2><p>Add the first Team Leader to grant access.</p></div>}</section><aside className="admin-card access-summary"><p className="eyebrow">ACCESS SUMMARY</p><h2>Team Leader accounts</h2><strong>{leaders.filter((u:any)=>u.active).length}</strong><span>active leader accounts</span><div><b>Security note</b><p>Each account opens only its assigned team. Master Administrator access remains separate.</p></div></aside></section>{message&&<div className="saved-report">✓ {message}</div>}<section className="admin-card shared-editor"><div className="admin-card-head"><div><p className="eyebrow">ROSTERS & ASSIGNMENTS</p><h2>All checklist teams</h2><span>Every checklist is available for assignment. Team and member names remain editable.</span></div><button onClick={addMember}>+ Add member</button></div><div className="shared-editor-columns"><div><h3>Teams & checklist</h3>{data.teams.map((row:any)=><button key={row.id} onClick={()=>editTeam(row)}><b>{row.name}</b><small>{data.checklists.find((c:any)=>c.id===row.checklist_id)?.name||'Unassigned'} · {row.division}</small><em>Edit</em></button>)}</div><div><h3>Members</h3>{data.members.length?data.members.map((row:any)=><button key={row.id} onClick={()=>editMember(row)}><b>{row.name}</b><small>{data.teams.find((t:any)=>t.id===row.team_id)?.name}</small><em>Edit</em></button>):<p>No members entered yet.</p>}</div><div><h3>All checklists</h3>{data.checklists.map((row:any)=><div key={row.id}><b>{row.name}</b><small>{row.schedule}</small></div>)}</div></div></section></>
+ return <><section className="people-grid"><section className="admin-card people-list"><div className="admin-card-head"><div><p className="eyebrow">TEAM LEADER ACCESS</p><h2>Real sign-in accounts</h2></div><button onClick={()=>openEditor('leader')}>+ Add Team Leader</button></div>{leaders.length?leaders.map((u:any)=><div className="person-line" key={u.id}><span><i>{u.display_name.split(' ').map((x:string)=>x[0]).join('').slice(0,2)}</i><b>{u.display_name}</b></span><span>{data.teams.find((t:any)=>t.id===u.team_id)?.name||'Unassigned'}</span><span>{u.username}</span><button className="reset-pass" onClick={()=>openEditor('leader',u)}>Edit account</button><button className="reset-pass" onClick={()=>openEditor('password',u)}>Reset password</button></div>):<div className="empty-detail"><span>—</span><h2>No Team Leaders entered</h2><p>Add the first Team Leader to grant access.</p></div>}</section><aside className="admin-card access-summary"><p className="eyebrow">ACCESS SUMMARY</p><h2>Team Leader accounts</h2><strong>{leaders.filter((u:any)=>u.active).length}</strong><span>active leader accounts</span><div><b>Security note</b><p>Each account opens only its assigned team. Master Administrator access remains separate.</p></div></aside></section>{message&&<div className="saved-report">✓ {message}</div>}{error&&<div className="people-error">{error}</div>}{editor&&<section className="admin-card people-editor"><div className="admin-card-head"><div><p className="eyebrow">{editor.id?'EDIT RECORD':'NEW RECORD'}</p><h2>{editor.kind==='leader'?'Team Leader account':editor.kind==='password'?`Reset password for ${editor.display_name}`:editor.kind==='member'?'Team member':editor.kind==='team'?'Team':'Checklist'}</h2></div><button onClick={()=>setEditor(null)}>× Cancel</button></div><div className="form-grid">
+ {editor.kind==='leader'&&<><label>Full name<input value={editor.display_name} onChange={e=>setEditor({...editor,display_name:e.target.value})}/></label><label>Username<input value={editor.username} onChange={e=>setEditor({...editor,username:e.target.value})}/></label>{!editor.id&&<label>Temporary password<input type="password" value={editor.password} onChange={e=>setEditor({...editor,password:e.target.value})}/><small>At least 8 characters</small></label>}<label>Assigned team<select value={editor.team_id} onChange={e=>setEditor({...editor,team_id:e.target.value})}>{data.teams.map((t:any)=><option value={t.id} key={t.id}>{t.name}</option>)}</select></label>{editor.id&&<label className="check-label"><input type="checkbox" checked={editor.active} onChange={e=>setEditor({...editor,active:e.target.checked})}/> Account active</label>}</>}
+ {editor.kind==='password'&&<label>New temporary password<input type="password" value={editor.password} onChange={e=>setEditor({...editor,password:e.target.value})}/><small>At least 8 characters</small></label>}
+ {editor.kind==='member'&&<><label>Member full name<input value={editor.name} onChange={e=>setEditor({...editor,name:e.target.value})}/></label><label>Assigned team<select value={editor.team_id} onChange={e=>setEditor({...editor,team_id:e.target.value})}>{data.teams.map((t:any)=><option value={t.id} key={t.id}>{t.name}</option>)}</select></label></>}
+ {editor.kind==='team'&&<><label>Team name<input value={editor.name} onChange={e=>setEditor({...editor,name:e.target.value})}/></label><label>Assigned checklist<select value={editor.checklist_id} onChange={e=>setEditor({...editor,checklist_id:e.target.value})}>{data.checklists.map((c:any)=><option value={c.id} key={c.id}>{c.name}</option>)}</select></label><label>Division<select value={editor.division} onChange={e=>setEditor({...editor,division:e.target.value})}><option>Day</option><option>Evening</option></select></label><label>Schedule<input value={editor.schedule} onChange={e=>setEditor({...editor,schedule:e.target.value})} placeholder="Example: Mon–Fri"/></label></>}
+ {editor.kind==='checklist'&&<><label>Checklist name<input value={editor.name} onChange={e=>setEditor({...editor,name:e.target.value})}/></label><label>Schedule<input value={editor.schedule} onChange={e=>setEditor({...editor,schedule:e.target.value})} placeholder="Daily or Weekly route"/></label></>}
+ </div><div className="people-editor-actions"><button onClick={()=>setEditor(null)}>Cancel</button><button className="primary-action" disabled={saving} onClick={saveEditor}>{saving?'Saving…':'Save changes'}</button></div></section>}
+ <section className="admin-card shared-editor"><div className="admin-card-head"><div><p className="eyebrow">ROSTERS & ASSIGNMENTS</p><h2>All checklist teams</h2><span>Every checklist is available for assignment. Team, member and checklist names remain editable.</span></div><div className="editor-add-actions"><button onClick={()=>openEditor('team')}>+ Add team</button><button onClick={()=>openEditor('member')}>+ Add member</button><button onClick={()=>openEditor('checklist')}>+ Add checklist</button></div></div><div className="shared-editor-columns"><div><h3>Teams & checklist</h3>{data.teams.map((row:any)=><button key={row.id} onClick={()=>openEditor('team',row)}><b>{row.name}</b><small>{data.checklists.find((c:any)=>c.id===row.checklist_id)?.name||'Unassigned'} · {row.division}</small><em>Edit</em></button>)}</div><div><h3>Members</h3>{data.members.length?data.members.map((row:any)=><button key={row.id} onClick={()=>openEditor('member',row)}><b>{row.name}</b><small>{data.teams.find((t:any)=>t.id===row.team_id)?.name}</small><em>Edit</em></button>):<p>No members entered yet.</p>}</div><div><h3>All checklists</h3>{data.checklists.map((row:any)=><button key={row.id} onClick={()=>openEditor('checklist',row)}><b>{row.name}</b><small>{row.schedule}</small><em>Edit</em></button>)}</div></div></section></>
 }
 function AdminPortal({onBack}:{onBack:()=>void}){
  const [tab,setTab]=useState<AdminTab>("overview"),[slot,setSlot]=useState("All teams"),[opened,setOpened]=useState<string|null>(null),[submissionDetail,setSubmissionDetail]=useState<any>(null),[reviewed,setReviewed]=useState<string[]>([]),[reports,setReports]=useState<string[]>([]),[awardApproved,setAwardApproved]=useState(false),[eveningAwardApproved,setEveningAwardApproved]=useState(false),[recognitionTeam,setRecognitionTeam]=useState(""),[recognitionFormat,setRecognitionFormat]=useState<"team"|"individual">("team"),[recognitionAward,setRecognitionAward]=useState("");
- const preStored=session.bootstrap;const season=preStored?.season||{name:'Launch Season',theme:'The Launch of the Cleanlympics',start_date:'2026-09-01',end_date:'2026-09-30',current_week:1};const seasonWeeks=Math.max(1,Math.ceil((new Date(`${season.end_date}T12:00:00`).getTime()-new Date(`${season.start_date}T12:00:00`).getTime()+86400000)/604800000));const weeksRemaining=Math.max(0,seasonWeeks-Number(season.current_week));const selectedRecognitionTeam=preStored?.teams?.find((t:any)=>String(t.id)===recognitionTeam);const recognitionMembers=selectedRecognitionTeam?preStored.members.filter((m:any)=>m.team_id===selectedRecognitionTeam.id):[];const recognitionChecklist=selectedRecognitionTeam?preStored.checklists.find((c:any)=>c.id===selectedRecognitionTeam.checklist_id):null;const recognitionDivision=selectedRecognitionTeam?`${selectedRecognitionTeam.division} Team Tournament`:'';
- const stored=session.bootstrap;const adminSubmissions=stored?.submissions?.length?stored.submissions.map((s:any)=>({id:`CL-${s.id}`,team:s.team_name,checklist:s.checklist_name,time:new Date(s.submitted_at).toLocaleString(),score:Number(s.completion_percent),leader:s.submitted_by_name||'Team Leader',rawId:s.id,status:s.status})):[];const adminAlerts=stored?.alerts?.length?stored.alerts.map((a:any)=>({id:`EA-${a.id}`,kind:a.category,priority:a.priority||'Routine',location:a.location,team:stored.teams.find((t:any)=>t.id===a.team_id)?.name||'Team',detail:a.description,age:new Date(a.created_at).toLocaleString(),rawId:a.id,status:a.status})):[];const standingRows=stored?.teams?.map((t:any)=>{const records=stored.submissions.filter((s:any)=>s.team_id===t.id&&s.status!=="rejected");const score=records.length?records.reduce((sum:number,s:any)=>sum+Number(s.completion_percent),0)/records.length:0;return{id:t.id,name:t.name,slot:t.division==="Day"?"Morning":"Evening",score:Math.round(score),points:records.reduce((sum:number,s:any)=>sum+Number(s.total_points),0),trend:records.slice(0,5).map((s:any)=>Number(s.completion_percent)),status:records.some((s:any)=>s.work_date===isoToday())?"submitted":"missing"}})||[];const adminTeams=standingRows,hasScores=adminTeams.some((t:any)=>t.points>0),dayLeader=adminTeams.filter((t:any)=>t.slot==='Morning').sort((a:any,b:any)=>b.points-a.points)[0],eveningLeader=adminTeams.filter((t:any)=>t.slot==='Evening').sort((a:any,b:any)=>b.points-a.points)[0];const todayAttendance=(stored?.attendanceRecords||[]).filter((a:any)=>a.work_date===isoToday());const attendanceRows=(stored?.teams||[]).map((team:any)=>{const rosterCount=stored.members.filter((m:any)=>m.team_id===team.id).length,records=todayAttendance.filter((a:any)=>a.team_id===team.id),missed=records.filter((a:any)=>['absent','noParticipation'].includes(a.status)).length;return{name:team.name,roster:rosterCount,participated:records.filter((a:any)=>a.status==='participated').length,missed,reported:records.length>0}});const offenderRows=(stored?.offenders||[]).map((o:any)=>({name:o.name,team:stored.teams.find((t:any)=>t.id===o.team_id)?.name||'Team',incidents:o.incidents,citations:stored.citations.filter((c:any)=>c.member_id===o.member_id).length}));
- const missingTeams=adminTeams.filter(t=>t.status==="missing");
+ const adminName=session.user?.name||'Master Administrator',adminInitials=adminName.split(' ').map((part:string)=>part[0]).join('').slice(0,2).toUpperCase();
+ const preStored=session.bootstrap;const season=preStored?.season||{name:'Launch Season',theme:'The Launch of the Cleanlympics',start_date:'2026-08-27',end_date:'2026-10-01',current_week:1};const seasonWeeks=Math.max(1,Math.ceil((new Date(`${season.end_date}T12:00:00`).getTime()-new Date(`${season.start_date}T12:00:00`).getTime()+86400000)/604800000));const weeksRemaining=Math.max(0,seasonWeeks-Number(season.current_week));const selectedRecognitionTeam=preStored?.teams?.find((t:any)=>String(t.id)===recognitionTeam);const recognitionMembers=selectedRecognitionTeam?preStored.members.filter((m:any)=>m.team_id===selectedRecognitionTeam.id):[];const recognitionChecklist=selectedRecognitionTeam?preStored.checklists.find((c:any)=>c.id===selectedRecognitionTeam.checklist_id):null;const recognitionDivision=selectedRecognitionTeam?`${selectedRecognitionTeam.division} Team Tournament`:'';
+ const stored=session.bootstrap;
+ const adminSubmissions=stored?.submissions?.length?stored.submissions.map((s:any)=>({id:`CL-${s.id}`,team:s.team_name,checklist:`${s.checklist_name}${s.area?` · ${s.area}`:''}`,time:new Date(s.submitted_at).toLocaleString(),score:Number(s.completion_percent),leader:s.submitted_by_name||'Team Leader',rawId:s.id,status:s.status})):[];
+ const pendingSubmissions=adminSubmissions.filter((submission:any)=>submission.status==='pending');
+ const adminAlerts=stored?.alerts?.length?stored.alerts.map((a:any)=>({id:`EA-${a.id}`,kind:a.category,priority:a.priority||'Routine',location:a.location,team:stored.teams.find((t:any)=>t.id===a.team_id)?.name||'Team',detail:a.description,age:new Date(a.created_at).toLocaleString(),rawId:a.id,status:a.status})):[];
+ const standingRows=stored?.teams?.map((t:any)=>{const records=stored.submissions.filter((s:any)=>s.team_id===t.id&&s.status!=="rejected"),dates=Array.from(new Set(records.map((s:any)=>s.work_date))),daily=dates.map((date:any)=>{const entries=records.filter((s:any)=>s.work_date===date);return{date,score:entries.reduce((sum:number,s:any)=>sum+Number(s.completion_percent),0)/entries.length,points:entries.reduce((sum:number,s:any)=>sum+Number(s.total_points),0)/entries.length}});const score=daily.length?daily.reduce((sum:number,row:any)=>sum+row.score,0)/daily.length:0;return{id:t.id,name:t.name,slot:t.division==="Day"?"Morning":"Evening",score:Math.round(score),points:daily.reduce((sum:number,row:any)=>sum+row.points,0),trend:daily.slice(0,5).map((row:any)=>row.score),status:records.some((s:any)=>s.work_date===isoToday())?"submitted":"missing"}})||[];
+ const adminTeams=standingRows,hasScores=adminTeams.some((t:any)=>t.points>0),dayLeader=adminTeams.filter((t:any)=>t.slot==='Morning').sort((a:any,b:any)=>b.points-a.points)[0],eveningLeader=adminTeams.filter((t:any)=>t.slot==='Evening').sort((a:any,b:any)=>b.points-a.points)[0];
+ const todayAttendance=(stored?.attendanceRecords||[]).filter((a:any)=>a.work_date===isoToday());
+ const attendanceRows=(stored?.teams||[]).map((team:any)=>{const rosterCount=stored.members.filter((m:any)=>m.team_id===team.id).length,records=Array.from(new Map(todayAttendance.filter((a:any)=>a.team_id===team.id).map((a:any)=>[a.member_id,a])).values()) as any[];const missed=records.filter((a:any)=>['absent','noParticipation'].includes(a.status)).length;return{name:team.name,roster:rosterCount,participated:records.filter((a:any)=>a.status==='participated').length,missed,reported:records.length>0}});
+ const offenderRows=(stored?.offenders||[]).map((o:any)=>({name:o.name,team:stored.teams.find((t:any)=>t.id===o.team_id)?.name||'Team',incidents:o.incidents,citations:stored.citations.filter((c:any)=>c.member_id===o.member_id).length}));
+ const weekendToday=[0,6].includes(new Date(`${isoToday()}T12:00:00`).getDay());
+ const missingTeams=adminTeams.filter(t=>t.status==="missing"&&(!weekendToday||!String(stored.teams.find((row:any)=>row.id===t.id)?.schedule||'').includes('Mon–Fri')));
  const teams=adminTeams.filter(t=>slot==="All teams"||t.slot===slot); const leader=[...teams].sort((a,b)=>b.points-a.points)[0];
  const overallUsage=stored.submissions.length?stored.submissions.reduce((sum:number,row:any)=>sum+Number(row.completion_percent),0)/stored.submissions.length:0;
  const openSubmission=async(s:any)=>{setOpened(s.id);setSubmissionDetail(null);if(s.rawId)try{setSubmissionDetail(await request(`/api/submissions/${s.rawId}`))}catch{setSubmissionDetail(null)}};
@@ -160,11 +180,11 @@ function AdminPortal({onBack}:{onBack:()=>void}){
 <small>Cleanlympics Control Center</small>
 </span>
 </div>
-<nav>{nav("overview","Overview")}{nav("season","Season setup")}{nav("standings","Print standings")}{nav("recognition","Acknowledgements")}{nav("submissions","Checklist review",adminSubmissions.length-reviewed.filter(x=>x.startsWith("CL")).length)}{nav("alerts","Estates Alerts",adminAlerts.length-reviewed.filter(x=>x.startsWith("EA")).length)}{nav("missing","Missing reports",missingTeams.length)}{nav("people","People & Access")}</nav>
+<nav>{nav("overview","Overview")}{nav("season","Season setup")}{nav("standings","Print standings")}{nav("recognition","Acknowledgements")}{nav("submissions","Checklist review",pendingSubmissions.length)}{nav("alerts","Estates Alerts",adminAlerts.filter((alert:any)=>alert.status!=='reviewed').length)}{nav("missing","Missing reports",missingTeams.length)}{nav("people","People & Access")}</nav>
 <div className="admin-user">
-<span>CR</span>
+<span>{adminInitials}</span>
 <div>
-<b>Christian Ramirez</b>
+<b>{adminName}</b>
 <small>Master Administrator</small>
 </div>
 </div>
@@ -174,7 +194,7 @@ function AdminPortal({onBack}:{onBack:()=>void}){
 <header className="admin-top">
 <div>
 <p>{displayDate(isoToday())}</p>
-<h1>{tab==="overview"?"Good morning, Christian":tab==="submissions"?"Checklist submissions":tab==="alerts"?"Estates Alert review":tab==="people"?"People & Access":tab==="season"?"Season setup":tab==="standings"?"Printable league standings":tab==="recognition"?"Printable team acknowledgements":"Missing checklist reports"}</h1>
+<h1>{tab==="overview"?`Welcome, ${adminName}`:tab==="submissions"?"Checklist submissions":tab==="alerts"?"Estates Alert review":tab==="people"?"People & Access":tab==="season"?"Season setup":tab==="standings"?"Printable league standings":tab==="recognition"?"Printable team acknowledgements":"Missing checklist reports"}</h1>
 </div>
 <div className="admin-top-actions">
 <button onClick={()=>setTab("alerts")}>! {adminAlerts.length} alerts</button>
@@ -185,7 +205,7 @@ function AdminPortal({onBack}:{onBack:()=>void}){
 <div className="admin-stats">
 <article>
 <span>AWAITING REVIEW</span>
-<strong>{adminSubmissions.length-reviewed.filter(x=>x.startsWith("CL")).length}</strong>
+<strong>{pendingSubmissions.length}</strong>
 <small>Checklist submissions</small>
 </article>
 <article className="warning">
@@ -228,9 +248,9 @@ function AdminPortal({onBack}:{onBack:()=>void}){
 <line x1="20" y1="20" x2="540" y2="20"/>
 <line className="goal" x1="20" y1="73" x2="540" y2="73"/>
 <line x1="20" y1="126" x2="540" y2="126"/>
-<line x1="20" y1="180" x2="540" y2="180"/>{teams.slice(0,5).map((t,ti)=>{const pts=t.trend.map((v,i)=>`${35+i*123},${180-(v-70)*5.33}`).join(" ");return <g key={t.name} className={`team-series s${ti}`}>
+<line x1="20" y1="180" x2="540" y2="180"/>{teams.slice(0,5).map((t,ti)=>{const chartY=(value:number)=>Math.max(20,Math.min(180,180-(value-70)*5.33)),pts=t.trend.map((v,i)=>`${35+i*123},${chartY(v)}`).join(" ");return <g key={t.name} className={`team-series s${ti}`}>
 <polyline points={pts}/>{t.trend.map((v,i)=>
-<circle key={i} cx={35+i*123} cy={180-(v-70)*5.33} r="4"/>)}</g>})}</svg>
+<circle key={i} cx={35+i*123} cy={chartY(v)} r="4"/>)}</g>})}</svg>
 <div className="chart-days">
 <span>Mon</span>
 <span>Tue</span>
@@ -250,7 +270,7 @@ function AdminPortal({onBack}:{onBack:()=>void}){
 <p className="eyebrow">CURRENT STANDINGS</p>
 <h2>Weekly leaders</h2>
 </div>
-<button onClick={()=>setTab("submissions")}>View all</button>
+<button onClick={()=>setTab("standings")}>View all</button>
 </div>{teams.slice().sort((a,b)=>b.points-a.points).slice(0,5).map((t,i)=>
 <div className="leader-row" key={t.name}>
 <span className={`rank r${i+1}`}>{i+1}</span>
@@ -270,7 +290,7 @@ function AdminPortal({onBack}:{onBack:()=>void}){
 <h2>Recent checklist submissions</h2>
 </div>
 <button onClick={()=>setTab("submissions")}>Review all</button>
-</div>{adminSubmissions.slice(0,3).map(s=>
+</div>{pendingSubmissions.slice(0,3).map(s=>
 <button className="queue-row" key={s.id} onClick={()=>{setTab("submissions");openSubmission(s)}}>
 <span className="queue-score">{s.score}%</span>
 <div>
@@ -306,13 +326,13 @@ function AdminPortal({onBack}:{onBack:()=>void}){
 </div>
 <input placeholder="Search team or checklist"/>
 </div>{adminSubmissions.map(s=>
-<button key={s.id} className={`submission-item ${opened===s.id?"selected":""} ${reviewed.includes(s.id)?"reviewed":""}`} onClick={()=>openSubmission(s)}>
+<button key={s.id} className={`submission-item ${opened===s.id?"selected":""} ${s.status==='approved'||reviewed.includes(s.id)?"reviewed":""}`} onClick={()=>openSubmission(s)}>
 <span>{s.score}%</span>
 <div>
 <b>{s.checklist}</b>
 <small>{s.team} · {s.leader} · {s.time}</small>
 </div>
-<strong>{reviewed.includes(s.id)?"Reviewed":"Open ›"}</strong>
+<strong>{s.status==='approved'||reviewed.includes(s.id)?"Approved":"Open ›"}</strong>
 </button>)}</section>
 <section className="admin-card detail-card">{opened?.startsWith("CL")?(()=>{const s=adminSubmissions.find(x=>x.id===opened)!;return <>
 <p className="eyebrow">SUBMISSION {s.id}</p>
@@ -343,7 +363,7 @@ function AdminPortal({onBack}:{onBack:()=>void}){
 </dl>
 {submissionDetail?.photo&&<figure className="submission-photo"><img src={`data:${submissionDetail.photo.mime};base64,${submissionDetail.photo.data}`} alt={`Uploaded hardcopy for ${s.checklist}`}/><figcaption>Uploaded hardcopy · {submissionDetail.photo.name}</figcaption></figure>}
 {!submissionDetail?.photo&&<p className="no-submission-photo">No hardcopy photo was attached to this submission.</p>}
-<button className="primary-action" onClick={async()=>{const rawId=(s as any).rawId;if(rawId){await request(`/api/submissions/${rawId}/status`,{method:'PUT',body:JSON.stringify({status:'approved'})});await refreshBootstrap()}setReviewed(r=>r.includes(s.id)?r:[...r,s.id])}}>✓ Approve checklist</button>
+<button className="primary-action" disabled={s.status==='approved'} onClick={async()=>{const rawId=(s as any).rawId;if(rawId){await request(`/api/submissions/${rawId}/status`,{method:'PUT',body:JSON.stringify({status:'approved'})});await refreshBootstrap()}setReviewed(r=>r.includes(s.id)?r:[...r,s.id])}}>{s.status==='approved'?"✓ Checklist approved":"✓ Approve checklist"}</button>
 <button className="print-action" onClick={()=>window.print()}>Print completed checklist</button>
 </>})():<div className="empty-detail">
 <span>✓</span>
@@ -424,28 +444,28 @@ function AdminPortal({onBack}:{onBack:()=>void}){
 <p className="eyebrow red-text">NO REPORT, REPORT</p>
 <h2>{reportTeam.name}</h2>
 <p className="report-explainer">Document the team leader’s failure to submit the required checklist within 24 hours.</p>
-<label>Team leader<input defaultValue={reportTeam.name==="Dusting Evening"?"James Ortiz":"Elena Morales"}/>
+<label>Team leader<input value={stored.users.find((user:any)=>user.role==='leader'&&user.team_id===stored.teams.find((team:any)=>team.name===reportTeam.name)?.id)?.display_name||'No Team Leader assigned'} readOnly/>
 </label>
-<label>Checklist<input defaultValue={reportTeam.name.replace(" Evening","")+" Daily Checklist"}/>
+<label>Checklist<input value={stored.checklists.find((checklist:any)=>checklist.id===stored.teams.find((team:any)=>team.name===reportTeam.name)?.checklist_id)?.name||'No checklist assigned'} readOnly/>
 </label>
-<label>Date checklist was due<input defaultValue="August 11, 2026 · 8:00 PM"/>
+<label>Date checklist was due<input value={displayDate(isoToday())} readOnly/>
 </label>
 <label>Administrator notes<textarea rows={5} placeholder="Record follow-up, explanation given, or corrective action discussed."/>
 </label>
 <button className="primary-action" onClick={async()=>{const team=session.bootstrap?.teams?.find((t:any)=>t.name===reportTeam.name);if(team)await request('/api/no-reports',{method:'POST',body:JSON.stringify({team_id:team.id,work_date:new Date().toISOString().slice(0,10),reason:'Checklist not submitted within 24 hours'})});await refreshBootstrap();setReports(r=>r.includes(reportTeam.name)?r:[...r,reportTeam.name])}}>Save No Report, Report</button>
-<button className="print-action" onClick={()=>window.print()}>Print report</button>{reports.includes(reportTeam.name)&&<div className="saved-report">✓ Report saved and ready to print</div>}</>:<div className="empty-detail">
+<button className="print-action" onClick={()=>window.print()}>Print report</button><button className="print-action pdf-action" onClick={()=>saveCurrentViewAsPdf(`Cleanlympics No Report - ${reportTeam.name}.pdf`)}>Save report as PDF</button>{reports.includes(reportTeam.name)&&<div className="saved-report">✓ Report saved and ready to print</div>}</>:<div className="empty-detail">
 <span>×</span>
 <h2>Select a missing team</h2>
 <p>Create a printable No Report, Report for the responsible team leader.</p>
 </div>}</section>
 </div>}
  {tab==="people"&&<section className="people-access">
-<div className="people-intro"><div><p className="eyebrow">TEAM MANAGEMENT</p><h2>Assign members and manage Team Leader access</h2><span>Use the shared database editor below to replace sample team, member and checklist names.</span></div></div>
+<div className="people-intro"><div><p className="eyebrow">TEAM MANAGEMENT</p><h2>Assign members and manage Team Leader access</h2><span>Use the shared database editor below to maintain team, member, and checklist names.</span></div></div>
 <PeopleAccessManager/>
 </section>}
  {tab==="season"&&<SeasonEditor/>}
  {tab==="standings"&&<section className="print-standings-wrap">
-<div className="print-standings-actions"><div><p className="eyebrow">HANDOUT PREVIEW</p><h2>{season.name} standings sheet</h2><span>Print-ready weekly standings, medallions and team achievements.</span></div><button onClick={()=>window.print()}>▣ Print standings sheet</button></div>
+<div className="print-standings-actions"><div><p className="eyebrow">HANDOUT PREVIEW</p><h2>{season.name} standings sheet</h2><span>Print-ready weekly standings, medallions and team achievements.</span></div><div className="print-export-buttons"><button onClick={()=>window.print()}>▣ Print standings sheet</button><button onClick={()=>saveCurrentViewAsPdf(`${season.name} Standings - Week ${season.current_week}.pdf`)}>Save standings as PDF</button></div></div>
 <article className="standings-sheet">
 <header><div className="sheet-emblem"><img src="./cleanlympics-logo.png" alt="Cleanlympics mop torch"/></div><div><p>THE CLEANLYMPICS</p><h1>{season.name} Standings</h1><span>Official Week {season.current_week} Handout · {season.theme}</span></div><aside><b>{weeksRemaining}</b><span>WEEKS<br/>REMAINING</span></aside></header>
 <section className="sheet-callout"><b>League update</b><p>{hasScores?`${dayLeader?.name||'No Day leader'} leads the Day Team Tournament, while ${eveningLeader?.name||'No Evening leader'} leads the Evening Team Tournament.`:"The season has not started yet. All teams currently have 0 points."}</p></section>
@@ -458,6 +478,7 @@ function AdminPortal({onBack}:{onBack:()=>void}){
 </section>}
  {tab==="recognition"&&<section className="recognition-wrap">
 <div className="recognition-actions"><div><p className="eyebrow">WINNER RECOGNITION</p><h2>Print team acknowledgements</h2><span>This page stays blank until you select a team with entered members.</span></div><div className="recognition-controls"><label>Winning team<select value={recognitionTeam} onChange={e=>setRecognitionTeam(e.target.value)}><option value="">Select a winning team</option>{stored.teams.map((t:any)=><option value={t.id} key={t.id}>{t.name}</option>)}</select></label><label>Award<select value={recognitionAward} onChange={e=>setRecognitionAward(e.target.value)}><option value="">Select an award</option><option>Weekly Champion · Week {season.current_week}</option><option>Season Champion · {season.name}</option><option>Consecutive 100% Streak</option><option>Outstanding Team Participation</option></select></label><div className="recognition-format"><button className={recognitionFormat==="team"?"active":""} onClick={()=>setRecognitionFormat("team")}>Team sheet</button><button className={recognitionFormat==="individual"?"active":""} onClick={()=>setRecognitionFormat("individual")}>Individual certificates</button></div><button className="recognition-print" disabled={!selectedRecognitionTeam||!recognitionAward||!recognitionMembers.length} onClick={()=>window.print()}>▣ Print {recognitionFormat==="team"?"acknowledgement":"certificates"}</button></div></div>
+{selectedRecognitionTeam&&recognitionAward&&recognitionMembers.length>0&&<div className="recognition-pdf-row"><button className="recognition-print pdf-action" onClick={()=>saveCurrentViewAsPdf(`Cleanlympics Acknowledgement - ${selectedRecognitionTeam.name}.pdf`)}>Save acknowledgement as PDF</button></div>}
 {!selectedRecognitionTeam||!recognitionAward?<div className="empty-detail"><span>★</span><h2>No acknowledgement prepared</h2><p>Select the actual winning team and award after results are entered.</p></div>:!recognitionMembers.length?<div className="empty-detail"><span>—</span><h2>No members entered for this team</h2><p>Add the winning team’s members in People & Access before printing.</p></div>:recognitionFormat==="team"?<article className="commendation-sheet">
 <header><img src="./cleanlympics-logo.png" alt="Cleanlympics mop torch"/><div><p>THE CLEANLYMPICS</p><span>OFFICIAL TEAM RECOGNITION</span></div><b>★</b></header>
 <div className="commendation-body"><p className="commendation-kicker">HIGHLY COMMENDED</p><h1>{selectedRecognitionTeam.name}</h1><p className="commendation-intro">The following members of the <strong>{selectedRecognitionTeam.name}</strong> are highly commended for winning the {recognitionAward.toLowerCase()} of the Cleanlympics.</p><div className="commendation-members">{recognitionMembers.map((member:any)=><span key={member.id}>★ <b>{member.name}</b></span>)}</div><p className="commendation-message">Their teamwork, participation, and commitment to completing the {recognitionChecklist?.name||'assigned'} checklist helped their team earn first place in the {recognitionDivision}.</p></div>
@@ -505,15 +526,16 @@ function AdminPortal({onBack}:{onBack:()=>void}){
 </div>
 {stored.claims.length?stored.claims.map((claim:any)=><div className="award-claim-row" key={claim.id}><span className="gift-icon">$5</span><div><b>{claim.team_name}</b><small>{claim.claim_type} · {claim.period_label}</small></div><strong>{claim.status==='approved'?"Ready for pickup":claim.status}</strong>{claim.status==='pending'&&<button onClick={async()=>{await request(`/api/award-claims/${claim.id}/status`,{method:'PUT',body:JSON.stringify({status:'approved'})});await refreshBootstrap();setAwardApproved(true)}}>Approve award</button>}</div>):<div className="empty-detail"><span>0</span><h2>No award claims</h2><p>Claims appear only after a team qualifies and submits one.</p></div>}
 </section>}
- <div className="admin-beta">Shared beta data refreshes from the Cleanlympics Server. Unentered results remain at 0 and no attendance citation is created without recorded incidents.</div>
+ <div className="admin-beta">Local beta data refreshes directly from this computer. Unentered results remain at 0 and no attendance citation is created without recorded incidents.</div>
 </div>
 </section>
 }
 function TeamStandings({onBack}:{onBack:()=>void}){
  const [board,setBoard]=useState<"weekly"|"season">("weekly"),[division,setDivision]=useState<"Day"|"Evening">("Day"),[claimState,setClaimState]=useState<"available"|"confirm"|"submitted">("available"),[rulesOpen,setRulesOpen]=useState(false),[liveTeams,setLiveTeams]=useState<any[]>([]);
- const season=session.bootstrap?.season||{name:'Launch Season',theme:'The Launch of the Cleanlympics',start_date:'2026-09-01',end_date:'2026-09-30',current_week:1};const seasonWeeks=Math.max(1,Math.ceil((new Date(`${season.end_date}T12:00:00`).getTime()-new Date(`${season.start_date}T12:00:00`).getTime()+86400000)/604800000));const weeksRemaining=Math.max(0,seasonWeeks-Number(season.current_week));
- useEffect(()=>{const bounds=weekBounds(isoToday());request(`/api/standings?from=${bounds.start}&to=${bounds.end}`).then(rows=>setLiveTeams(rows.map((row:any)=>({id:row.id,name:row.name,checklist:session.bootstrap?.checklists?.find((c:any)=>c.id===session.bootstrap?.teams?.find((t:any)=>t.id===row.id)?.checklist_id)?.name||'Checklist',division:row.division,schedule:session.bootstrap?.teams?.find((t:any)=>t.id===row.id)?.schedule||'',weekly:Number(row.weekly_points),season:Number(row.season_points),average:Number(row.completion),move:'same'})))).catch(()=>setLiveTeams([]))},[]);
+ const season=session.bootstrap?.season||{name:'Launch Season',theme:'The Launch of the Cleanlympics',start_date:'2026-08-27',end_date:'2026-10-01',current_week:1};const seasonWeeks=Math.max(1,Math.ceil((new Date(`${season.end_date}T12:00:00`).getTime()-new Date(`${season.start_date}T12:00:00`).getTime()+86400000)/604800000));const weeksRemaining=Math.max(0,seasonWeeks-Number(season.current_week));
+ useEffect(()=>{const bounds=weekBounds(isoToday(),season.start_date);request(`/api/standings?from=${bounds.start}&to=${bounds.end}`).then(rows=>setLiveTeams(rows.map((row:any)=>({id:row.id,name:row.name,checklist:session.bootstrap?.checklists?.find((c:any)=>c.id===session.bootstrap?.teams?.find((t:any)=>t.id===row.id)?.checklist_id)?.name||'Checklist',division:row.division,schedule:session.bootstrap?.teams?.find((t:any)=>t.id===row.id)?.schedule||'',weekly:Number(row.weekly_points),season:Number(row.season_points),average:Number(row.completion),move:'same'})))).catch(()=>setLiveTeams([]))},[season.start_date]);
  const sourceTeams=liveTeams.length?liveTeams:(session.bootstrap?.teams||[]).map((team:any)=>({id:team.id,name:team.name,checklist:'Checklist',division:team.division,schedule:team.schedule,weekly:0,season:0,average:0,move:'same'}));const ranked=sourceTeams.filter(t=>t.division===division).slice().sort((a,b)=>board==="weekly"?b.weekly-a.weekly:b.season-a.season); const leader=ranked[0],dayOverall=sourceTeams.filter(t=>t.division==='Day').sort((a,b)=>b.weekly-a.weekly)[0],eveningOverall=sourceTeams.filter(t=>t.division==='Evening').sort((a,b)=>b.weekly-a.weekly)[0];
+ const savedClaim=(session.bootstrap?.claims||[]).find((claim:any)=>claim.team_id===leader?.id&&claim.claim_type===`${division} weekly winner`),claimApproved=savedClaim?.status==='approved',claimPending=savedClaim?.status==='pending'||claimState==='submitted';
  const submitClaim=async()=>{if(leader?.id)await request('/api/award-claims',{method:'POST',body:JSON.stringify({team_id:leader.id,claim_type:`${division} weekly winner`,period_label:'Current week'})});setClaimState('submitted');refreshBootstrap().catch(()=>{})};
  return <main className="standings-page"><LanguageToggle/>
 <header className="league-top">
@@ -569,7 +591,7 @@ function TeamStandings({onBack}:{onBack:()=>void}){
 </article>
 </section>
 <section className="division-summary"><article><span>☀</span><div><small>DAY TEAM LEADER</small><b>{dayOverall?.weekly>0?dayOverall.name:"No leader yet"}</b><p>Mon–Fri · {(dayOverall?.weekly||0).toFixed(1)} weekly points</p></div></article><article><span>☾</span><div><small>EVENING TEAM LEADER</small><b>{eveningOverall?.weekly>0?eveningOverall.name:"No leader yet"}</b><p>Mon–Sun · {(eveningOverall?.weekly||0).toFixed(1)} weekly points</p></div></article></section>
-<section className="reward-unlock"><div className="reward-burst">★</div><div className="reward-copy"><p>{division.toUpperCase()} WINNER REWARD</p><h2>{leader?.weekly>0?(claimState==="submitted"?"Award claim sent for approval":"Achievement unlocked: Division Champion"):"No weekly winner yet"}</h2><span>{leader?.weekly>0?(claimState==="submitted"?"The Master Administrator must approve the reward before the café gift card is ready.":`${leader?.name} is #1 in the ${division} Tournament.`):"The award unlocks after checklist results establish a weekly winner."}</span></div><div className="cafe-card"><small>IN-HOUSE CAFÉ</small><strong>$5</strong><span>GIFT CARD</span></div>{leader?.weekly>0&&claimState==="available"&&<button onClick={()=>setClaimState("confirm")}>Claim Award →</button>}{claimState==="confirm"&&<div className="claim-confirm"><b>Submit this {division} claim?</b><span>It will be sent to the Master Administrator.</span><div><button onClick={()=>setClaimState("available")}>Cancel</button><button onClick={submitClaim}>Submit claim</button></div></div>}{claimState==="submitted"&&<div className="claim-pending"><b>⏳ Awaiting approval</b><small>Division claim · Current week</small></div>}</section>
+<section className={`reward-unlock ${claimApproved?'approved-reward':''}`}><div className="reward-burst">★</div><div className="reward-copy"><p>{division.toUpperCase()} WINNER REWARD</p><h2>{claimApproved?"Gift card approved and ready":leader?.weekly>0?(claimPending?"Award claim sent for approval":"Achievement unlocked: Division Champion"):"No weekly winner yet"}</h2><span>{claimApproved?`${leader?.name} may present this approved Café Borinquen gift card.`:leader?.weekly>0?(claimPending?"The Master Administrator must approve the reward before the café gift card is ready.":`${leader?.name} is #1 in the ${division} Tournament.`):"The award unlocks after checklist results establish a weekly winner."}</span></div>{claimApproved?<img className="gift-card-image" src="./borinquen-gift-card.png" alt="$5 Café Borinquen Cleanlympics gift card"/>:<div className="cafe-card"><small>IN-HOUSE CAFÉ</small><strong>$5</strong><span>GIFT CARD</span></div>}{leader?.weekly>0&&!savedClaim&&claimState==="available"&&<button onClick={()=>setClaimState("confirm")}>Claim Award →</button>}{claimState==="confirm"&&<div className="claim-confirm"><b>Submit this {division} claim?</b><span>It will be sent to the Master Administrator.</span><div><button onClick={()=>setClaimState("available")}>Cancel</button><button onClick={submitClaim}>Submit claim</button></div></div>}{claimPending&&<div className="claim-pending"><b>⏳ Awaiting approval</b><small>Division claim · Current week</small></div>}</section>
 <section className="streak-preview"><div>🔒</div><span><p>CONSECUTIVE 100% STREAK</p><h3>Streak rewards are coming next</h3><small>Complete 100% of the checklist for more than two consecutive weeks to begin unlocking tier rewards.</small></span><em>Tier levels to be defined</em></section>
 <section className="grand-champion-note"><span>♛</span><div><p>FUTURE CROSS-DIVISION EVENT</p><b>Grand Champion playoff</b><small>Reserved for a future scoring model that can fairly compare five-day Day teams with seven-day Evening teams using completion, streak, participation, and bonus performance.</small></div><em>Not active yet</em></section>
 <section className="standings-card">
@@ -644,13 +666,74 @@ function TeamStandings({onBack}:{onBack:()=>void}){
 </main>
 }
 export default function Home(){
- const [selectedId,setSelectedId]=useState("dusting"),[statuses,setStatuses]=useState<Record<string,Status>>({}),[memberStatuses,setMemberStatuses]=useState<Record<string,MemberStatus>>({}),[excuseReasons,setExcuseReasons]=useState<Record<string,string>>({}),[assignments,setAssignments]=useState<Record<string,string>>({}),[areas,setAreas]=useState<Record<string,string>>({}),[selectedDay,setSelectedDay]=useState("Tue"),[workDate,setWorkDate]=useState(isoToday()),[submitted,setSubmitted]=useState(false),[view,setView]=useState<"checklist"|"review"|"alert"|"admin"|"standings">("checklist"),[reviewDay,setReviewDay]=useState("Mon"),[role,setRole]=useState<"leader"|"admin">(session.user?.role==="admin"?"admin":"leader"),[lockedNotice,setLockedNotice]=useState(false),[adminPrompt,setAdminPrompt]=useState(false),[adminPassword,setAdminPassword]=useState(""),[adminError,setAdminError]=useState(false),[scanState,setScanState]=useState<"idle"|"ready"|"review">("idle"),[scanName,setScanName]=useState(""),[checklistPhoto,setChecklistPhoto]=useState<ChecklistPhoto|null>(null),[citationOpen,setCitationOpen]=useState(false),[citationLevel,setCitationLevel]=useState(1),[citationIssued,setCitationIssued]=useState(false),[liveHistory,setLiveHistory]=useState<any[]>([]);
- const checklist=checklists.find(c=>c.id===selectedId)!; const allItems=checklist.sections.flatMap(s=>s.items); const scoped=(id:string)=>`${workDate}:${selectedId}:${id}`; const currentStatuses=Object.fromEntries(allItems.map(i=>[i.id,statuses[scoped(i.id)]??null]));
- const assignedChecklist=session.bootstrap?.checklists?.find((c:any)=>c.name===checklist.name);const assignedTeam=session.user?.teamId?session.bootstrap?.teams?.find((t:any)=>t.id===session.user.teamId):session.bootstrap?.teams?.find((t:any)=>t.checklist_id===assignedChecklist?.id);const sharedRoster=assignedTeam?session.bootstrap?.members?.filter((m:any)=>m.team_id===assignedTeam.id).map((m:any)=>m.name):[];const roster=sharedRoster||[];const frequentOffenders=(session.bootstrap?.offenders||[]).filter((entry:any)=>entry.team_id===assignedTeam?.id);const selectedOffender=frequentOffenders[0]; const rosterStatus=(name:string)=>memberStatuses[`${workDate}:${selectedId}:${name}`]??null; const attendanceAnswered=roster.filter(n=>{const s=rosterStatus(n);return s&&(!(s==="excused")||Boolean(excuseReasons[`${workDate}:${selectedId}:${n}`]?.trim()))}).length; const penalties=roster.filter(n=>rosterStatus(n)==="absent"||rosterStatus(n)==="noParticipation").length*5; const participationBonus=roster.length>0&&roster.every(n=>rosterStatus(n)==="participated")?5:0;
- const counts=useMemo(()=>{const v=Object.values(currentStatuses),done=v.filter(x=>x==="done").length,notDone=v.filter(x=>x==="notDone").length,na=v.filter(x=>x==="na").length,answered=done+notDone+na,applicable=allItems.length-na;return{done,notDone,na,answered,score:applicable?Math.round(done/applicable*1000)/10:0}},[selectedId,statuses]);
- const switchChecklist=(id:string)=>{setSelectedId(id);setSubmitted(false);setScanState("idle");setChecklistPhoto(null);setScanName("");window.scrollTo({top:0,behavior:"smooth"})}; const setStatus=(id:string,status:Exclude<Status,null>)=>{setSubmitted(false);setStatuses(s=>{const key=scoped(id);return{...s,[key]:s[key]===status?null:status}})}; const setMemberStatus=(name:string,status:Exclude<MemberStatus,null>)=>{setSubmitted(false);setMemberStatuses(s=>({...s,[`${workDate}:${selectedId}:${name}`]:status}))}; const markAllDone=()=>{setSubmitted(false);setStatuses(s=>({...s,...Object.fromEntries(allItems.map(i=>[scoped(i.id),"done"]))}))}; const trySubmit=async()=>{if(counts.answered<allItems.length||attendanceAnswered<roster.length){document.querySelector(counts.answered<allItems.length?".unanswered-note":".roster-card")?.scrollIntoView({behavior:"smooth",block:"center"});return}const remoteChecklist=session.bootstrap?.checklists?.find((c:any)=>c.name===checklist.name);const team=session.user?.teamId?session.bootstrap?.teams?.find((t:any)=>t.id===session.user.teamId):session.bootstrap?.teams?.find((t:any)=>t.checklist_id===remoteChecklist?.id)||session.bootstrap?.teams?.[0];const remoteItems=session.bootstrap?.items?.filter((i:any)=>i.checklist_id===remoteChecklist?.id)||[];const payloadItems=allItems.map(item=>{const remote=remoteItems.find((i:any)=>i.label===item.label);return remote?{id:remote.id,status:currentStatuses[item.id],assigned_to:null}:null}).filter(Boolean);const attendance=roster.map(name=>{const member=session.bootstrap?.members?.find((m:any)=>m.team_id===team?.id&&m.name===name);return member?{member_id:member.id,status:rosterStatus(name),excuse_reason:excuseReasons[`${workDate}:${selectedId}:${name}`]||null,uniform_streak:0}:null}).filter(Boolean);await request('/api/submissions',{method:'POST',body:JSON.stringify({team_id:team?.id,checklist_id:remoteChecklist?.id,work_date:workDate,completionPercent:counts.score,unaccounted:roster.filter(n=>['absent','noParticipation'].includes(rosterStatus(n)||'')).length,uniformViolations:[],inspectionPassed:true,submitted:true,items:payloadItems,attendance,photo:checklistPhoto?{name:checklistPhoto.name,mime:checklistPhoto.mime,data:checklistPhoto.data}:null})});await refreshBootstrap();setSubmitted(true)};
- useEffect(()=>{const remoteChecklist=session.bootstrap?.checklists?.find((c:any)=>c.name===checklist.name);const team=session.user?.teamId?session.bootstrap?.teams?.find((t:any)=>t.id===session.user.teamId):session.bootstrap?.teams?.find((t:any)=>t.checklist_id===remoteChecklist?.id);if(!team){setLiveHistory([]);return}const bounds=weekBounds(workDate);request(`/api/history/${team.id}`).then(rows=>setLiveHistory(rows.filter((row:any)=>row.work_date>=bounds.start&&row.work_date<=bounds.end).map((row:any)=>({day:new Date(`${row.work_date}T12:00:00`).toLocaleDateString('en-US',{weekday:'short'}),score:Number(row.completion_percent),done:0,missed:[]})))).catch(()=>setLiveHistory([]))},[selectedId,submitted,workDate]);
- const displayWeekData=emptyWeekData.map(empty=>liveHistory.find(row=>row.day===empty.day)||empty);const enteredDays=liveHistory.length;const average=enteredDays?Math.round(liveHistory.reduce((sum,d)=>sum+d.score,0)/enteredDays*10)/10:0; const selectedReview=displayWeekData.find(d=>d.day===reviewDay)||displayWeekData[0],selectedHasEntry=liveHistory.some(row=>row.day===selectedReview.day); const weeklyPoints=Math.round(liveHistory.reduce((sum,d)=>sum+d.score/10,0)*10)/10; const dailyPoints=Math.round(selectedReview.score)/10; const seasonPoints=session.bootstrap?.submissions?.filter((s:any)=>s.team_id===(session.user?.teamId||0)&&s.status!=="rejected").reduce((sum:number,s:any)=>sum+Number(s.total_points),0)||0; const linePoints=displayWeekData.map((d,i)=>`${50+i*100},${210-d.score*2}`).join(" ");
+ const [selectedId,setSelectedId]=useState("dusting"),[statuses,setStatuses]=useState<Record<string,Status>>({}),[memberStatuses,setMemberStatuses]=useState<Record<string,MemberStatus>>({}),[excuseReasons,setExcuseReasons]=useState<Record<string,string>>({}),[assignments,setAssignments]=useState<Record<string,string>>({}),[areas,setAreas]=useState<Record<string,string>>({}),[workShifts,setWorkShifts]=useState<Record<string,string>>({}),[entryNumber,setEntryNumber]=useState(1),[selectedDay,setSelectedDay]=useState("Tue"),[workDate,setWorkDate]=useState(isoToday()),[submitted,setSubmitted]=useState(false),[submitState,setSubmitState]=useState<"idle"|"saving"|"success"|"error">("idle"),[submitError,setSubmitError]=useState(""),[view,setView]=useState<"checklist"|"review"|"alert"|"admin"|"standings">("checklist"),[reviewDay,setReviewDay]=useState("Mon"),[role,setRole]=useState<"leader"|"admin">(session.user?.role==="admin"?"admin":"leader"),[lockedNotice,setLockedNotice]=useState(false),[adminPrompt,setAdminPrompt]=useState(false),[adminPassword,setAdminPassword]=useState(""),[adminError,setAdminError]=useState(false),[scanState,setScanState]=useState<"idle"|"ready"|"review">("idle"),[scanName,setScanName]=useState(""),[checklistPhoto,setChecklistPhoto]=useState<ChecklistPhoto|null>(null),[citationOpen,setCitationOpen]=useState(false),[citationLevel,setCitationLevel]=useState(1),[citationIssued,setCitationIssued]=useState(false),[liveHistory,setLiveHistory]=useState<any[]>([]),[allHistory,setAllHistory]=useState<any[]>([]);
+ const [reviewDetail,setReviewDetail]=useState<any>(null);
+ const checklist=checklists.find(c=>c.id===selectedId)!;
+ const allItems=checklist.sections.flatMap(s=>s.items);
+ const shiftSelectionKey=`${workDate}:${selectedId}`;
+ const isCafe=selectedId==="cafeDaily"||selectedId==="cafeWeekly";
+ const isRestroom=selectedId==="restroom";
+ const isWeekend=[0,6].includes(new Date(`${workDate}T12:00:00`).getDay());
+ const workShift=isCafe?"Café":isWeekend?"Weekend":isRestroom?"Evening":workShifts[shiftSelectionKey]||"Morning";
+ // Every editable value belongs to one checklist, one date, and one shift/team.
+ // This prevents a Bathroom draft (or a Morning draft) from appearing in a
+ // different checklist or in the Evening team's entry for the same date.
+ const recordKey=`${shiftSelectionKey}:${workShift}:entry-${entryNumber}`;
+ const scoped=(id:string)=>`${recordKey}:task:${id}`;
+ const memberKey=(name:string)=>`${recordKey}:member:${name}`;
+ const assignmentKey=(id:string)=>`${recordKey}:assignment:${id}`;
+ const currentStatuses=Object.fromEntries(allItems.map(i=>[i.id,statuses[scoped(i.id)]??null]));
+ const catalogChecklistId=checklists.findIndex(c=>c.id===selectedId)+1;
+ const assignedChecklist=session.bootstrap?.checklists?.find((c:any)=>c.id===catalogChecklistId)||session.bootstrap?.checklists?.find((c:any)=>String(c.name).normalize("NFC")===checklist.name.normalize("NFC"));
+ const checklistDisplayName=assignedChecklist?.name||checklist.name,checklistDisplaySchedule=assignedChecklist?.schedule||checklist.schedule;
+ const userTeam=session.user?.teamId?session.bootstrap?.teams?.find((t:any)=>t.id===session.user.teamId):null;
+ const checklistTeams=session.bootstrap?.teams?.filter((t:any)=>t.checklist_id===assignedChecklist?.id)||[];
+ const shiftDivision=workShift==="Morning"?"Day":"Evening";
+ const assignedTeam=userTeam?.checklist_id===assignedChecklist?.id?userTeam:checklistTeams.find((t:any)=>t.division===shiftDivision)||checklistTeams[0];
+ const sharedRoster=assignedTeam?session.bootstrap?.members?.filter((m:any)=>m.team_id===assignedTeam.id).map((m:any)=>m.name):[];
+ const roster=sharedRoster||[];
+ const frequentOffenders=(session.bootstrap?.offenders||[]).filter((entry:any)=>entry.team_id===assignedTeam?.id);
+ const selectedOffender=frequentOffenders[0];
+ const rosterStatus=(name:string)=>memberStatuses[memberKey(name)]??null;
+ const attendanceAnswered=roster.filter(n=>{const s=rosterStatus(n);return s&&(!(s==="excused")||Boolean(excuseReasons[memberKey(n)]?.trim()))}).length;
+ const penalties=roster.filter(n=>rosterStatus(n)==="absent"||rosterStatus(n)==="noParticipation").length*5;
+ const participationBonus=roster.length>0&&roster.every(n=>rosterStatus(n)==="participated")?5:0;
+ const counts=useMemo(()=>{const v=Object.values(currentStatuses),done=v.filter(x=>x==="done").length,notDone=v.filter(x=>x==="notDone").length,na=v.filter(x=>x==="na").length,answered=done+notDone+na,applicable=allItems.length-na;return{done,notDone,na,answered,score:applicable?Math.round(done/applicable*1000)/10:0}},[selectedId,statuses,recordKey]);
+ const switchChecklist=(id:string)=>{setSelectedId(id);setEntryNumber(1);setSubmitted(false);setSubmitState("idle");setSubmitError("");setLiveHistory([]);setAllHistory([]);setReviewDetail(null);setScanState("idle");setChecklistPhoto(null);setScanName("");window.scrollTo({top:0,behavior:"smooth"})};
+ const chooseEntry=(number:number)=>{setEntryNumber(number);setSubmitted(false);setSubmitState("idle");setSubmitError("");setChecklistPhoto(null);setScanName("")};
+ const setStatus=(id:string,status:Exclude<Status,null>)=>{setSubmitted(false);setSubmitState("idle");setStatuses(s=>{const key=scoped(id);return{...s,[key]:s[key]===status?null:status}})};
+ const setMemberStatus=(name:string,status:Exclude<MemberStatus,null>)=>{setSubmitted(false);setSubmitState("idle");setMemberStatuses(s=>({...s,[memberKey(name)]:status}))};
+ const markAllDone=()=>{setSubmitted(false);setSubmitState("idle");setStatuses(s=>({...s,...Object.fromEntries(allItems.map(i=>[scoped(i.id),"done"]))}))};
+ const trySubmit=async()=>{
+  setSubmitError("");
+  if(counts.answered<allItems.length||attendanceAnswered<roster.length){setSubmitState("error");setSubmitError(counts.answered<allItems.length?"Every checklist item needs an answer.":"Every team member needs an attendance status.");document.querySelector(counts.answered<allItems.length?".unanswered-note":".roster-card")?.scrollIntoView({behavior:"smooth",block:"center"});return}
+  if(!assignedChecklist||!assignedTeam){setSubmitState("error");setSubmitError("This checklist is not assigned to a team. Ask the Master Administrator to verify People & Access.");return}
+  if(isRestroom&&!areas[recordKey]?.trim()){setSubmitState("error");setSubmitError("Enter the bathroom or floor for this restroom checklist before submitting.");document.querySelector('.setup-card')?.scrollIntoView({behavior:"smooth",block:"center"});return}
+  const remoteItems=session.bootstrap?.items?.filter((i:any)=>i.checklist_id===assignedChecklist.id)||[];
+  const payloadItems=allItems.map((item,index)=>{const remote=remoteItems[index];const assignedName=assignments[assignmentKey(item.id)];const assignedMember=session.bootstrap?.members?.find((m:any)=>m.team_id===assignedTeam.id&&m.name===assignedName);return remote?{id:remote.id,status:currentStatuses[item.id],assigned_to:assignedMember?.id||null}:null}).filter(Boolean);
+  if(payloadItems.length!==allItems.length){setSubmitState("error");setSubmitError("The saved checklist definition does not match this screen. Ask the administrator to update the checklist catalog.");return}
+  const attendance=roster.map(name=>{const member=session.bootstrap?.members?.find((m:any)=>m.team_id===assignedTeam.id&&m.name===name);return member?{member_id:member.id,status:rosterStatus(name),excuse_reason:excuseReasons[memberKey(name)]||null,uniform_streak:0}:null}).filter(Boolean);
+  try{setSubmitState("saving");await request('/api/submissions',{method:'POST',body:JSON.stringify({team_id:assignedTeam.id,checklist_id:assignedChecklist.id,work_date:workDate,entry_number:entryNumber,area:isCafe?"Café":areas[recordKey]||null,work_shift:workShift,completionPercent:counts.score,unaccounted:roster.filter(n=>['absent','noParticipation'].includes(rosterStatus(n)||'')).length,uniformViolations:[],inspectionPassed:true,submitted:true,items:payloadItems,attendance,photo:checklistPhoto?{name:checklistPhoto.name,mime:checklistPhoto.mime,data:checklistPhoto.data}:null})});await refreshBootstrap();setSubmitted(true);setSubmitState("success")}
+  catch(error){setSubmitted(false);setSubmitState("error");setSubmitError(error instanceof Error?error.message:"The checklist could not be saved.")}
+ };
+ useEffect(()=>{let cancelled=false;if(!assignedTeam||!assignedChecklist){setLiveHistory([]);setAllHistory([]);return()=>{cancelled=true}}const expectedChecklistId=assignedChecklist.id,bounds=weekBounds(workDate,session.bootstrap?.season?.start_date);request(`/api/history/${assignedTeam.id}`).then(rows=>{if(cancelled)return;const checklistRows=rows.filter((row:any)=>row.checklist_id===expectedChecklistId);setAllHistory(checklistRows);setLiveHistory(checklistRows.filter((row:any)=>row.work_date>=bounds.start&&row.work_date<=bounds.end).map((row:any)=>({id:row.id,date:row.work_date,entryNumber:Number(row.entry_number||1),checklistId:row.checklist_id,day:new Date(`${row.work_date}T12:00:00`).toLocaleDateString('en-US',{weekday:'short'}),score:Number(row.completion_percent),points:Number(row.total_points),area:row.area,shift:row.work_shift,done:0,missed:[]}))) }).catch(()=>{if(!cancelled){setSubmitState(state=>state==="saving"?"error":state);setSubmitError(error=>error||"The checklist history could not be refreshed. Your saved submission remains in the local database.")}});return()=>{cancelled=true}},[selectedId,submitted,workDate,assignedTeam?.id,assignedChecklist?.id]);
+ useEffect(()=>{let cancelled=false;const expectedChecklistId=assignedChecklist?.id,expectedTeamId=assignedTeam?.id,expectedEntry=entryNumber,saved=allHistory.find((row:any)=>row.work_date===workDate&&row.checklist_id===expectedChecklistId&&row.team_id===expectedTeamId&&Number(row.entry_number||1)===expectedEntry);if(!saved)return()=>{cancelled=true};request(`/api/submissions/${saved.id}`).then(detail=>{if(cancelled||detail.submission.checklist_id!==expectedChecklistId||detail.submission.team_id!==expectedTeamId||Number(detail.submission.entry_number||1)!==expectedEntry)return;const nextStatuses:Record<string,Status>={},nextAssignments:Record<string,string>={};for(const [index,item] of allItems.entries()){const stored=detail.items[index];if(stored){nextStatuses[scoped(item.id)]=stored.status;const member=session.bootstrap?.members?.find((m:any)=>m.id===stored.assigned_to);if(member)nextAssignments[assignmentKey(item.id)]=member.name}}setStatuses(s=>({...s,...nextStatuses}));setAssignments(a=>({...a,...nextAssignments}));if(detail.submission.area)setAreas(a=>({...a,[recordKey]:detail.submission.area}));if(detail.submission.work_shift)setWorkShifts(s=>({...s,[shiftSelectionKey]:detail.submission.work_shift}));setSubmitted(true);setSubmitState("success")}).catch(()=>{});return()=>{cancelled=true}},[allHistory,workDate,selectedId,assignedChecklist?.id,assignedTeam?.id,recordKey,entryNumber]);
+ const dateEntries=allHistory.filter((row:any)=>row.work_date===workDate&&row.checklist_id===assignedChecklist?.id).sort((a:any,b:any)=>Number(a.entry_number||1)-Number(b.entry_number||1));
+ const dailyHistory=Array.from(new Map(liveHistory.map(row=>[row.date,liveHistory.filter(other=>other.date===row.date)])).entries()).map(([date,rows]:any)=>({id:rows[0].id,date,day:rows[0].day,score:Math.round(rows.reduce((sum:number,row:any)=>sum+row.score,0)/rows.length*10)/10,points:Math.round(rows.reduce((sum:number,row:any)=>sum+row.points,0)/rows.length*10)/10,entries:rows.length,areas:rows.map((row:any)=>row.area).filter(Boolean)}));
+ const displayWeekData=emptyWeekData.map(empty=>dailyHistory.find(row=>row.day===empty.day)||empty);
+ const enteredDays=dailyHistory.length;
+ const average=enteredDays?Math.round(dailyHistory.reduce((sum,d)=>sum+d.score,0)/enteredDays*10)/10:0;
+ const selectedReview=displayWeekData.find(d=>d.day===reviewDay)||displayWeekData[0],selectedHasEntry=liveHistory.some(row=>row.day===selectedReview.day);
+ const selectedDayEntries=liveHistory.filter(row=>row.day===selectedReview.day).sort((a:any,b:any)=>Number(a.entryNumber||1)-Number(b.entryNumber||1));
+ const weeklyPoints=Math.round(dailyHistory.reduce((sum,d)=>sum+Number(d.points||0),0)*10)/10;
+ const dailyPoints=Number(selectedReview.points??Math.round(selectedReview.score)/10);
+ const seasonDailyPoints=Array.from(new Map(allHistory.filter((s:any)=>s.status!=="rejected").map((row:any)=>[row.work_date,allHistory.filter((other:any)=>other.status!=="rejected"&&other.work_date===row.work_date).map((other:any)=>Number(other.total_points))])).values());
+ const seasonPoints=Math.round(seasonDailyPoints.reduce((sum:number,points:any)=>sum+points.reduce((daySum:number,value:number)=>daySum+value,0)/points.length,0)*10)/10;
+ const linePoints=displayWeekData.map((d,i)=>`${50+i*100},${210-d.score*2}`).join(" ");
+ const weeklySeries=useMemo(()=>{const start=session.bootstrap?.season?.start_date||workDate,byDate=new Map<string,number[]>();for(const row of allHistory){if(row.status==="rejected")continue;byDate.set(row.work_date,[...(byDate.get(row.work_date)||[]),Number(row.total_points)])}const groups=new Map<number,number>();for(const [date,points] of byDate){const week=Math.max(1,Math.floor((new Date(`${date}T12:00:00`).getTime()-new Date(`${start}T12:00:00`).getTime())/604800000)+1),dailyAverage=points.reduce((sum,value)=>sum+value,0)/points.length;groups.set(week,(groups.get(week)||0)+dailyAverage)}let cumulative=0;return Array.from(groups.entries()).sort((a,b)=>a[0]-b[0]).map(([week,points])=>{cumulative+=points;return{week,points:Math.round(points*10)/10,cumulative:Math.round(cumulative*10)/10}})},[allHistory,session.bootstrap?.season?.start_date]);
+ const weeklyChartMax=Math.max(10,...weeklySeries.map(w=>w.cumulative));
+ const weeklyPointsLine=weeklySeries.map((w,i)=>`${50+i*(600/Math.max(1,weeklySeries.length-1))},${210-w.points/weeklyChartMax*190}`).join(" ");
+ const weeklyCumulativeLine=weeklySeries.map((w,i)=>`${50+i*(600/Math.max(1,weeklySeries.length-1))},${210-w.cumulative/weeklyChartMax*190}`).join(" ");
  if(view==="admin"&&role==="admin")return <AdminPortal onBack={()=>{setRole("leader");setView("checklist")}}/>;
  if(view==="standings")return <TeamStandings onBack={()=>setView("checklist")}/>;
  if(view==="alert")return <main><LanguageToggle/>
@@ -666,14 +749,14 @@ export default function Home(){
 <div className="leader-pill">
 <span>{checklist.shortName.slice(0,2).toUpperCase()}</span>
 <div>
-<b>{checklist.team}</b>
-<small>{checklist.schedule}</small>
+<b>{assignedTeam?.name||checklist.team}</b>
+<small>{workShift} · {checklistDisplaySchedule}</small>
 </div>
 </div>
 </div>
 </header>
 <div className="page-shell">
-<EstatesAlert checklist={checklist} onBack={()=>setView("checklist")}/>
+<EstatesAlert checklist={{...checklist,name:checklistDisplayName,schedule:checklistDisplaySchedule}} onBack={()=>setView("checklist")}/>
 </div>
 </main>;
  return <main><LanguageToggle/>
@@ -690,8 +773,8 @@ export default function Home(){
 <div className="leader-pill">
 <span>{checklist.shortName.slice(0,2).toUpperCase()}</span>
 <div>
-<b>{checklist.team}</b>
-<small>{checklist.schedule}</small>
+<b>{assignedTeam?.name||checklist.team}</b>
+<small>{workShift} · {checklistDisplaySchedule}</small>
 </div>
 </div>
 </div>
@@ -701,8 +784,8 @@ export default function Home(){
 <div className="review-header">
 <div>
 <p className="eyebrow">WEEKLY PERFORMANCE</p>
-<h1>{checklist.name}</h1>
-<p>{checklist.team} · {weekBounds(workDate).label}</p>
+<h1>{checklistDisplayName}</h1>
+<p>{assignedTeam?.name||checklist.team} · {weekBounds(workDate,session.bootstrap?.season?.start_date).label}</p>
 </div>
 <div className={`average-card ${average>=90?"qualified":""}`}>
 <span>Weekly average</span>
@@ -712,7 +795,7 @@ export default function Home(){
 </div>
 <div className="review-controls">
 <label>Checklist being reviewed<select value={selectedId} onChange={e=>{setSelectedId(e.target.value);setReviewDay("Tue")}}>{checklists.map(c=>
-<option key={c.id} value={c.id}>{c.name}</option>)}</select>
+<option key={c.id} value={c.id}>{session.bootstrap?.checklists?.find((saved:any)=>saved.id===checklists.findIndex(local=>local.id===c.id)+1)?.name||c.name}</option>)}</select>
 </label>
 <button onClick={()=>setView("checklist")}>Open today’s checklist</button>
 </div>
@@ -739,7 +822,7 @@ export default function Home(){
 <b>Weekly Award</b>
 <span>{average>=90?"Qualified":"Not yet qualified"}</span>
 <b>Season Award</b>
-<span>Currently ranked #2</span>
+<span>See Team Standings</span>
 </aside>
 </div>
 <div className="chart-card">
@@ -768,6 +851,10 @@ export default function Home(){
 </g>})}</svg>
 </div>
 </div>
+<div className="chart-card weekly-history-card">
+<div className="chart-title"><div><h2>Points progress by week</h2><p>Saved weekly points and the accumulated season total remain available as the season progresses.</p></div><div className="weekly-legends"><span><i className="weekly-dot"/>Weekly total</span><span><i className="cumulative-dot"/>Accumulated total</span></div></div>
+{weeklySeries.length?<div className="line-chart"><svg viewBox="0 0 700 250" role="img" aria-label="Weekly and accumulated points line graph"><line className="grid-line" x1="50" y1="20" x2="650" y2="20"/><line className="grid-line" x1="50" y1="115" x2="650" y2="115"/><line className="grid-line" x1="50" y1="210" x2="650" y2="210"/><polyline className="weekly-points-line" points={weeklyPointsLine}/><polyline className="cumulative-points-line" points={weeklyCumulativeLine}/>{weeklySeries.map((w,i)=>{const x=50+i*(600/Math.max(1,weeklySeries.length-1)),weeklyY=210-w.points/weeklyChartMax*190,cumulativeY=210-w.cumulative/weeklyChartMax*190;return <g key={w.week}><circle className="weekly-point" cx={x} cy={weeklyY} r="6"/><circle className="cumulative-point" cx={x} cy={cumulativeY} r="6"/><text className="point-value" x={x} y={Math.min(weeklyY,cumulativeY)-12} textAnchor="middle">{w.points.toFixed(1)} / {w.cumulative.toFixed(1)}</text><text className="day-label" x={x} y="238" textAnchor="middle">Week {w.week}</text></g>})}</svg></div>:<div className="empty-weekly-history"><b>No saved weeks yet</b><span>The first submitted checklist will begin the weekly points history.</span></div>}
+</div>
 <div className="day-review">
 <div className="day-summary">
 <span>{selectedReview.day}</span>
@@ -777,6 +864,7 @@ export default function Home(){
 <small>{dailyPoints.toFixed(1)} points earned</small>
 </div>
 </div>
+{selectedDayEntries.length>1&&<div className="review-location-entries"><p className="eyebrow">SEPARATE LOCATION CHECKLISTS</p><div>{selectedDayEntries.map((entry:any,index:number)=><button key={entry.id} onClick={async()=>setReviewDetail(await request(`/api/submissions/${entry.id}`))}><b>{entry.area||`Location ${index+1}`}</b><span>{entry.score}%</span><small>{Number(entry.points).toFixed(1)} points</small></button>)}</div><small>The daily graph and standings use the average of these {selectedDayEntries.length} location results.</small></div>}
 <div className="missed-review">
 <div>
 <h2>{!selectedHasEntry?"No submission entered":selectedReview.missed.length?"Items missed or not completed":"Completed checklist"}</h2>
@@ -784,52 +872,49 @@ export default function Home(){
 </div>{!selectedHasEntry?<div className="perfect-state">0 points</div>:selectedReview.missed.length?<ul>{selectedReview.missed.map(item=>
 <li key={item}>
 <span>×</span>{item}<b>Not done</b>
-</li>)}</ul>:<div className="perfect-state">✓ 100% complete</div>}<button className="view-submission">View full {selectedReview.day} submission</button>
+</li>)}</ul>:<div className="perfect-state">✓ 100% complete</div>}<button className="view-submission" disabled={!selectedHasEntry} onClick={async()=>{if(selectedReview.id)setReviewDetail(await request(`/api/submissions/${selectedReview.id}`))}}>{selectedHasEntry?`View full ${selectedReview.day} submission`:`No ${selectedReview.day} submission`}</button>
 </div>
 </div>
+{reviewDetail&&<div className="review-detail-modal"><div className="review-detail-dialog"><button className="dialog-close" onClick={()=>setReviewDetail(null)}>×</button><p className="eyebrow">SAVED CHECKLIST RECORD</p><h2>{reviewDetail.submission.work_date} · {reviewDetail.submission.work_shift}</h2><p>{reviewDetail.submission.area||"No building area entered"}</p><div className="saved-items">{reviewDetail.items.map((item:any)=><span key={item.id} className={item.status}><b>{item.status==="done"?"✓":item.status==="na"?"N/A":"×"}</b>{item.label}</span>)}</div>{reviewDetail.photo&&<img className="review-photo" src={`data:${reviewDetail.photo.mime};base64,${reviewDetail.photo.data}`} alt="Saved checklist hardcopy"/>}</div></div>}
 <div className="beta-note">Only saved checklist submissions are included. Unentered days remain at 0 and are not counted in the weekly average.</div>
 </section>:<>
  <div className="portal-switch">
 <div>
 <span>SECURE ADMINISTRATOR ACCESS</span>
-<b>{role==="admin"?"Signed in as Master Administrator":"Master Administrator sign-in required"}</b>
+<b>{session.user?.role==="admin"?`Signed in as ${session.user.name}`:"Your account does not include Administrator access"}</b>
 </div>
-<label>Beta role<select value={role} onChange={e=>{if(e.target.value==="admin"){setAdminPrompt(true);setAdminPassword("");setAdminError(false)}else{setRole("leader");setView("checklist")}setLockedNotice(false)}}>
-<option value="leader">Team Leader</option>
-<option value="admin">Master Administrator</option>
-</select>
-</label>
-<button className={role!=="admin"?"locked":""} aria-disabled={role!=="admin"} onClick={()=>{if(role==="admin")setView("admin");else setLockedNotice(true)}}>{role==="admin"?"Open Administrator Portal →":"🔒 Administrator Portal"}</button>
-</div>{adminPrompt&&<div className="admin-login-backdrop"><form className="admin-login" onSubmit={e=>{e.preventDefault();if(adminPassword==="Password123!"){setRole("admin");setAdminPrompt(false);setView("admin")}else setAdminError(true)}}><span className="admin-lock">A</span><p className="eyebrow">MASTER ADMINISTRATOR</p><h2>Password required</h2><p>Enter the trial administrator password to continue.</p><label>Password<input autoFocus type="password" value={adminPassword} onChange={e=>{setAdminPassword(e.target.value);setAdminError(false)}} placeholder="Enter administrator password"/></label>{adminError&&<div className="login-error">Incorrect password. Please try again.</div>}<div><button type="button" onClick={()=>setAdminPrompt(false)}>Cancel</button><button type="submit">Sign in securely</button></div><small>Beta access only · Trial password provided by the Master Administrator</small></form></div>}{lockedNotice&&<div className="locked-message">🔒 Access denied. This area is available only to an authenticated Master Administrator.</div>}<div className="catalog-heading">
+<button className={session.user?.role!=="admin"?"locked":""} aria-disabled={session.user?.role!=="admin"} onClick={()=>{if(session.user?.role==="admin"){setRole("admin");setView("admin")}else setLockedNotice(true)}}>{session.user?.role==="admin"?"Open Administrator Portal →":"🔒 Administrator Portal"}</button>
+</div>{lockedNotice&&<div className="locked-message">🔒 Access denied. This area is available only to an authenticated Master Administrator.</div>}<div className="catalog-heading">
 <div>
 <p className="eyebrow">CHECKLIST LIBRARY</p>
 <h1>Select a checklist</h1>
 </div>
 <span>{checklists.length} checklist types</span>
 </div>
- <nav className="checklist-tabs" aria-label="Checklist types">{checklists.map(c=>
+ <nav className="checklist-tabs" aria-label="Checklist types">{checklists.map((c,index)=>
 <button key={c.id} className={selectedId===c.id?"active":""} onClick={()=>switchChecklist(c.id)}>
 <ChecklistIcon checklist={c}/>
 <span>
-<b>{c.shortName}</b>
-<small>{c.schedule}</small>
+<b>{session.bootstrap?.checklists?.find((saved:any)=>saved.id===index+1)?.name||c.shortName}</b>
+<small>{session.bootstrap?.checklists?.find((saved:any)=>saved.id===index+1)?.schedule||c.schedule}</small>
 </span>
 </button>)}</nav>
- <div className="crumbs">My checklists <span>›</span> {checklist.name}</div>
+ <div className="crumbs">My checklists <span>›</span> {checklistDisplayName}</div>
 <section className="checklist-hero">
 <ChecklistIcon checklist={checklist}/>
 <div className="hero-copy">
 <span className="beta-badge">BETA CHECKLIST</span>
-<h1>{checklist.name}</h1>
-<p>{checklist.schedule} checklist · {checklist.team}</p>
+<h1>{checklistDisplayName}</h1>
+<p>{workShift} · {checklistDisplaySchedule} checklist · {assignedTeam?.name||checklist.team}</p>
 </div>
 <div className="date-card">
 <span>WORK DATE</span>
 <strong>{displayDate(workDate).split(',')[0]}</strong>
-<input aria-label="Checklist work date" type="date" value={workDate} max={isoToday()} onChange={e=>{setWorkDate(e.target.value);setSubmitted(false);setReviewDay(new Date(`${e.target.value}T12:00:00`).toLocaleDateString('en-US',{weekday:'short'}))}}/>
+<input aria-label="Checklist work date" type="date" value={workDate} max={isoToday()} onChange={e=>{const day=new Date(`${e.target.value}T12:00:00`).toLocaleDateString('en-US',{weekday:'short'});setWorkDate(e.target.value);setEntryNumber(1);setSubmitted(false);setSubmitState("idle");setSubmitError("");setReviewDay(day);setSelectedDay(day)}}/>
 <small>{workDate===isoToday()?"Today":"Backlog entry"}</small>
 </div>
 </section>
+ {!isCafe&&<section className="location-entry-card"><div><p className="eyebrow">DATED LOCATION ENTRIES</p><h2>{isRestroom?"Bathrooms completed on this date":"Separate areas completed on this date"}</h2><span>Each location keeps its own answers and percentage. Tournament points use the daily average across these entries.</span></div><div className="location-entry-actions">{dateEntries.length?dateEntries.map((row:any)=><button key={row.id} className={entryNumber===Number(row.entry_number||1)?"active":""} onClick={()=>chooseEntry(Number(row.entry_number||1))}><b>{row.area||`Entry ${row.entry_number||1}`}</b><small>{Number(row.completion_percent)}%</small></button>):<button className="active" onClick={()=>chooseEntry(1)}><b>Entry 1</b><small>Not submitted</small></button>}<button className="add-location" onClick={()=>chooseEntry(Math.max(0,...dateEntries.map((row:any)=>Number(row.entry_number||1)))+1)}>+ Add another location</button></div></section>}
  {selectedId==="operationsMonitor"&&<section className="monitor-role-note"><span>WORKING ROLE NAME</span><div><b>Cleaning Operations Monitor</b><p>Previously described as the “Enforcer.” This role verifies readiness, participation, checklist use, uniforms, and cleaning quality while Team Leaders remain responsible for correcting their team’s work.</p></div></section>}
  {checklist.weekly&&<section className="day-card">
 <div>
@@ -841,8 +926,9 @@ export default function Home(){
 <p>The weekly route is divided by day. Only today’s assigned portion is scored on this submission.</p>
 </section>}
  <section className="setup-card">
-<label htmlFor="area">{checklist.areaLabel}</label>
-<input id="area" value={areas[selectedId]??""} onChange={e=>setAreas(a=>({...a,[selectedId]:e.target.value}))} placeholder={checklist.weekly?`Example: ${selectedDay} – West Wing offices`:"Example: East Wing – First Floor"}/>
+<label htmlFor="area">{isCafe?"Fixed cleaning area":checklist.areaLabel}</label>
+{isCafe?<input id="area" value="Café" readOnly/>:<input id="area" value={areas[recordKey]??""} onChange={e=>setAreas(a=>({...a,[recordKey]:e.target.value}))} placeholder={checklist.weekly?`Example: ${selectedDay} – West Wing offices`:"Example: East Wing – First Floor"}/>}
+<label className="shift-field">Cleaning shift<select value={workShift} disabled={isCafe||isWeekend||isRestroom} onChange={e=>{setWorkShifts(s=>({...s,[shiftSelectionKey]:e.target.value}));setLiveHistory([]);setAllHistory([]);setSubmitted(false);setSubmitState("idle");setSubmitError("")}}>{isCafe?<option>Café</option>:isWeekend?<option>Weekend</option>:isRestroom?<option>Evening</option>:<><option>Morning</option><option>Evening</option></>}</select><small>{isWeekend?"One combined Weekend shift is used on Saturday and Sunday.":isCafe?"Café checklists remain assigned only to the café.":isRestroom?"The Restroom Team is assigned to the Evening shift on weekdays.":"Choose the shift completing this dated checklist."}</small></label>
 <button className="mark-all" onClick={markAllDone}>✓ Mark all done</button>
 </section>
  <section className="paper-import">
@@ -868,7 +954,7 @@ export default function Home(){
 {citationOpen&&selectedOffender&&<div className="citation-panel"><div><p className="eyebrow">MEMBER CITATION · {selectedOffender.name.toUpperCase()}</p><h3>Select the current offense level</h3></div><button className="citation-close" onClick={()=>setCitationOpen(false)}>×</button><div className="citation-levels">{[
 "First offense — Member is warned.","Second offense — Warning plus all cleaning instruction videos must be watched within 1 week.","Third offense — Member must independently deep clean one assigned area.","Fourth offense — Member is disqualified from the game but must continue cleaning duties."
 ].map((x,i)=><button key={x} className={citationLevel===i+1?"active":""} onClick={()=>setCitationLevel(i+1)}><b>{i+1}</b><span>{x}</span></button>)}</div><label>Team leader notes<textarea rows={3} placeholder="Record dates, pattern observed, discussion, and assigned corrective action."/></label><div className="citation-actions"><small>Citation is sent to the Master Administrator and kept in the member’s history.</small><button onClick={async()=>{await request('/api/citations',{method:'POST',body:JSON.stringify({member_id:selectedOffender.member_id,offense_level:citationLevel,notes:'Issued through Team Leader portal'})});await refreshBootstrap();setCitationIssued(true)}}>{citationIssued?"✓ Citation issued":"Issue citation"}</button></div>{citationIssued&&<div className="citation-success">Citation #{citationLevel} recorded for {selectedOffender.name}.</div>}</div>}
-<div className="member-list">{roster.map((name,i)=>{const ms=rosterStatus(name),reasonKey=`${workDate}:${selectedId}:${name}`;return <div className={`member-row ${ms??""}`} key={name}>
+<div className="member-list">{roster.map((name,i)=>{const ms=rosterStatus(name),reasonKey=memberKey(name);return <div className={`member-row ${ms??""}`} key={name}>
 <span className="member-avatar">{name.split(" ").map(x=>x[0]).join("")}</span>
 <div>
 <b>{name}</b>
@@ -893,7 +979,7 @@ export default function Home(){
  <section className="progress-card">
 <div className="progress-top">
 <div>
-<span>CHECKLIST PROGRESS</span>
+<span>CHECKLIST PROGRESS · {displayDate(workDate).toUpperCase()}</span>
 <strong>{counts.answered} of {allItems.length} answered</strong>
 </div>
 <b>{Math.round(counts.answered/allItems.length*100)}%</b>
@@ -935,6 +1021,7 @@ export default function Home(){
 <strong>{Math.max(0,counts.score/10-penalties+participationBonus).toFixed(1)}</strong>
 </div>
 </section>
+<section className="running-week-total"><span>{assignedTeam?.name?.toUpperCase()||'TEAM'} · ACCUMULATED POINTS FOR {weekBounds(workDate,session.bootstrap?.season?.start_date).label.toUpperCase()}</span><strong>{weeklyPoints.toFixed(1)}</strong><small>Includes saved dated submissions for this team and checklist. Today’s projected points are added after submission.</small></section>
  {checklist.sections.map(section=>
 <section className="check-section" key={section.title}>
 <div className="section-heading">
@@ -944,12 +1031,12 @@ export default function Home(){
 </div>
 <span className="section-count">{section.items.filter(i=>currentStatuses[i.id]).length}/{section.items.length}</span>
 </div>
-<div className="rows">{section.items.map(item=>{const status=currentStatuses[item.id],assignmentKey=`${workDate}:${selectedId}:${item.id}`;return <div className={`task-row ${status??""}`} key={item.id}>
+<div className="rows">{section.items.map(item=>{const status=currentStatuses[item.id],itemAssignmentKey=assignmentKey(item.id);return <div className={`task-row ${status??""}`} key={item.id}>
 <button className="task-label" onClick={()=>setStatus(item.id,"done")} aria-label={status==="done"?`Clear completed status for ${item.label}`:`Mark ${item.label} done`}>
 <span className="check-circle">{status==="done"?"✓":""}</span>
 <span>{item.label}</span>
 </button>
-<label className="task-assignee"><span>Assigned to</span><select value={assignments[assignmentKey]??""} onChange={e=>setAssignments(a=>({...a,[assignmentKey]:e.target.value}))}><option value="">Unassigned</option>{roster.map(name=><option key={name}>{name}</option>)}</select></label>
+<label className="task-assignee"><span>Assigned to</span><select value={assignments[itemAssignmentKey]??""} onChange={e=>setAssignments(a=>({...a,[itemAssignmentKey]:e.target.value}))}><option value="">Unassigned</option>{roster.map(name=><option key={name}>{name}</option>)}</select></label>
 <div className="choices" role="group" aria-label={`Status for ${item.label}`}>
 <button aria-pressed={status==="done"} className={status==="done"?"selected done-choice":""} onClick={()=>setStatus(item.id,"done")}>Done</button>
 <button aria-pressed={status==="notDone"} className={status==="notDone"?"selected missed-choice":""} onClick={()=>setStatus(item.id,"notDone")}>Not done</button>
@@ -965,6 +1052,8 @@ export default function Home(){
 <p>Complete the checklist and report attendance for every team member.</p>
 </div>
 </div>
-<button className="submit-button" onClick={trySubmit}>Submit for approval</button>{submitted&&<div className="success-message">Submitted successfully with attendance and participation. Projected points: {Math.max(0,counts.score/10-penalties+participationBonus).toFixed(1)}.</div>}</section>
+<button className="submit-button" disabled={submitState==="saving"} onClick={trySubmit}>{submitState==="saving"?"Saving…":submitted?"Resubmit updated checklist":"Submit for approval"}</button>
+{submitState==="success"&&<div className="success-message">✓ Saved successfully for {displayDate(workDate)}. The graph, weekly total, and administrator review queue have been updated.</div>}
+{submitState==="error"&&<div className="submit-error">Could not submit: {submitError}</div>}</section>
  </>}</div>
 </main>}

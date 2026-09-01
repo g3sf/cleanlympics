@@ -1,52 +1,33 @@
-# Cleanlympics Electron Staff Beta 0.2.3
+# Cleanlympics Electron Staff Beta 0.3.3
 
-Electron desktop client plus a shared Windows Server API and SQLite database.
+Standalone Windows desktop application for Cleanlympics staff checklists and administration.
 
-## Included
+## Architecture
 
-- Windows NSIS `.exe` installer configuration
-- Mop-torch desktop and Start menu icon
-- Administrator and Team Leader authentication
-- Twelve checklist types with 176 task lines
-- Done, Not Done and Not Applicable task controls
-- Editable teams, members and checklist names
-- Day and Evening divisions
-- Attendance, excused reasons, participation bonuses and penalties
-- Daily scoring submissions, plotted history graphs and shared standings
-- Administrator review, printable standings and acknowledgements
-- Awards, citations, No Report reports and Estates Alerts
-- Estates Alert storage
-- English/Spanish desktop shell
-- Windows Server installation and backup scripts
+The packaged application does not run a web server, open a browser port, or require a network connection. The React renderer calls a restricted Electron preload API, which sends requests over Electron IPC to an in-process router. The router reads and writes a local SQLite database under Electron's per-user application-data folder.
+
+Vite uses a localhost development server only while running `npm run dev`. Production installers load the compiled interface directly from `dist/index.html`.
 
 ## Development
 
 1. Install Node.js 22.
-2. Run `npm install` from this folder.
-3. Copy `apps/server/.env.example` to `apps/server/.env` and change the password and secret.
+2. Run `npm ci` from this folder.
+3. Run `npm test`.
 4. Run `npm run dev`.
 
-## Build the installer
+No server configuration or `.env` file is required.
 
-On Windows, double-click `BUILD-WINDOWS-INSTALLER.bat`. It installs dependencies,
-runs the scoring tests and builds the NSIS `.exe`. The installer appears in
-`apps/desktop/release`.
+## Build Windows installers
 
-See `docs/WINDOWS-SERVER-DEPLOYMENT.md` for server transfer instructions.
+- `npm run dist:win` builds the NSIS `.exe` installer.
+- `npm run dist:msix` builds the MSIX/AppX package.
 
-## Staff beta notes
+Outputs appear under `apps/desktop/release`. Installer signing requires a suitable Windows code-signing certificate; certificates and generated installers are intentionally excluded from Git.
 
-- Team, member and checklist names are editable and shared.
-- Daily results, checklist-line answers, standings, alerts, citations and award claims persist centrally.
-- The work date is selectable. Team Leaders and administrators can enter earlier dates as backlog records; each date keeps separate task and attendance answers.
-- New databases begin with 0 points and no pre-awarded standings, honors, citations or frequent offenders.
-- Launch Season defaults to September 1–30, 2026 and Week 1. The administrator can edit its name, theme, dates and current week from Season setup.
-- New databases include an editable team for every checklist, but no sample members or Team Leader accounts.
-- People & Access creates and edits real Team Leader sign-in accounts, passwords, team assignments and member rosters.
-- Acknowledgements stay blank until an administrator selects an actual winning team and award; names come only from that team's saved roster.
-- Missing-report badges, dashboard totals and report lists all use the same live database calculation instead of a demo count.
-- Frequent-offender notices are generated only after three saved unexcused absence or non-participation records.
-- Hardcopy photos can be taken or selected, previewed, attached to the dated submission, stored in the shared database, and opened during administrator review. Checklist answers remain Team Leader-confirmed.
-- SQLite is shared through the API, never through a network file share.
+## Local data
 
-Initial administrator login: `admin` / `Password123!`. Change it before staff use.
+Each Windows user gets a private `cleanlympics.sqlite` database on first launch. Operational databases are never committed or bundled into the installer. Back up and migrate an existing database separately when upgrading a machine.
+
+Initial administrator login for a new database: `admin` / `Password123!`. Change it before staff use.
+
+See `docs/STANDALONE-REFACTOR-PROGRESS.md` for the current validation and packaging status.

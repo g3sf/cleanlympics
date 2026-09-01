@@ -2,13 +2,15 @@ node_modules/
 dist/
 release/
 data/
+test-data/
 .env
 *.log
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
 *.pfx
 *.pem
 *.key
 *.cer
 *.msi
 *.msix
-packaging/work/
-outputs/
