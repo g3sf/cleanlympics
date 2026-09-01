@@ -17,8 +17,8 @@ echo Running standalone application tests...
 call npm test
 if errorlevel 1 goto :failed
 
-echo Building the Cleanlympics Windows installer...
-call npm run dist:win
+echo Building the Cleanlympics MSIX installer...
+call npm run dist:msix
 if errorlevel 1 goto :failed
 
 echo.

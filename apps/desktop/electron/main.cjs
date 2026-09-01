@@ -12,16 +12,49 @@ app.commandLine.appendSwitch('in-process-gpu');
 
 let embeddedApi;
 
-function ensureLocalDatabase(){
- const dataDir=path.join(app.getPath('userData'),'data');
- const databasePath=path.join(dataDir,'cleanlympics.sqlite');
+function sharedDatabasePath(){
+ // Public Documents is writable by every interactive RDP user by default and is
+ // deliberately outside the MSIX package.  It therefore survives both repair
+ // and in-place package upgrades.
+ const configuredPath=process.env.CLEANLYMPICS_DATABASE_PATH;
+ if(configuredPath)return path.resolve(configuredPath);
+ const publicProfile=process.env.PUBLIC||'C:\\Users\\Public';
+ return path.join(publicProfile,'Documents','Cleanlympics','data','cleanlympics.sqlite');
+}
+
+function legacyDatabasePaths(databasePath){
+ const paths=[
+  process.env.CLEANLYMPICS_LEGACY_DATABASE_PATH,
+  path.join(app.getPath('userData'),'data','cleanlympics.sqlite'),
+  'C:\\CleanlympicsServer\\data\\cleanlympics.sqlite',
+ ].filter(Boolean).map(candidate=>path.resolve(candidate));
+ return [...new Set(paths)].filter(candidate=>candidate.toLowerCase()!==databasePath.toLowerCase());
+}
+
+function migrateLegacyDatabase(databasePath){
+ if(fs.existsSync(databasePath))return;
+ const legacyPath=legacyDatabasePaths(databasePath).find(candidate=>fs.existsSync(candidate));
+ if(!legacyPath)return;
+ fs.mkdirSync(path.dirname(databasePath),{recursive:true});
+ // SQLite may have recent transactions in the WAL. Copy its sidecars before
+ // opening the target database so SQLite recovers every committed change.
+ for(const suffix of ['','-wal','-shm']){
+  const source=`${legacyPath}${suffix}`;
+  if(fs.existsSync(source))fs.copyFileSync(source,`${databasePath}${suffix}`,fs.constants.COPYFILE_EXCL);
+ }
+}
+
+function ensureSharedDatabase(){
+ const databasePath=sharedDatabasePath();
+ const dataDir=path.dirname(databasePath);
  fs.mkdirSync(dataDir,{recursive:true});
+ migrateLegacyDatabase(databasePath);
  process.env.DATABASE_PATH=databasePath;
  return databasePath;
 }
 
 async function initializeEmbeddedApi(){
- ensureLocalDatabase();
+ ensureSharedDatabase();
  const modulePath=pathToFileURL(path.join(__dirname,'server','index.js')).href;
  embeddedApi=await import(modulePath);
  ipcMain.handle('api:request',async(_,request)=>embeddedApi.handleRequest(request));
