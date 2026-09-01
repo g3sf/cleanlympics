@@ -36,6 +36,13 @@ To upgrade, install the next signed MSIX with the same package identity and publ
 
 Operational databases are never committed or bundled into the installer. Back them up separately.
 
-Initial administrator login for a new database: `admin` / `Password123!`. Change it before staff use.
+## First sign-in
+
+For a new database, sign in with:
+
+- User ID: `admin`
+- Password: `Password123!`
+
+Change this default password before staff use the application.
 
 See `docs/STANDALONE-REFACTOR-PROGRESS.md` for the current validation and packaging status.

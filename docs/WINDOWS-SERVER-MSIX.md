@@ -33,6 +33,15 @@ If that shared file is absent on its first launch, Cleanlympics copies a legacy 
 
 To use another shared volume, set the system environment variable `CLEANLYMPICS_DATABASE_PATH` to the complete SQLite file path, grant the RDP users read/write permission, and restart the application.
 
+## First sign-in
+
+For a new database, use the initial administrator account:
+
+- User ID: `admin`
+- Password: `Password123!`
+
+Change this default password before giving staff access.
+
 ## Updates
 
 Keep the code-signing private key safe; every later release must use the same publisher certificate and a higher version number. Import the certificate only once. Install each later MSIX with:
