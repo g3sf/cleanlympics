@@ -9,12 +9,23 @@ No Node.js, web server, port, database server, or other runtime is required on t
 
 ## First installation
 
-Sign in to the server as an administrator. Import `Cleanlympics-Local-CodeSigning.cer` into **Local Computer > Trusted Root Certification Authorities**. From an elevated PowerShell prompt, this can be done with:
+Sign in to the server as an administrator. Before installing the MSIX, trust the included certificate for the whole machine:
+
+1. Download `Cleanlympics-Local-CodeSigning.cer` from the release and double-click it in File Explorer.
+2. Select **Install Certificate…**.
+3. Select **Local Machine**, then choose **Next**. Approve the Windows administrator prompt if it appears.
+4. Select **Place all certificates in the following store**, then choose **Browse…**.
+5. Choose **Trusted Root Certification Authorities**, select **OK**, then select **Next** and **Finish**.
+6. Confirm the successful import message, then double-click `Cleanlympics-0.3.4-win-x64.msix` to install the application. Select **Install** in the Windows installer window.
+
+The same administrator can instead perform both steps from an elevated PowerShell prompt:
 
 ```powershell
 Import-Certificate -FilePath .\Cleanlympics-Local-CodeSigning.cer -CertStoreLocation Cert:\LocalMachine\Root
 Add-AppxPackage -Path .\Cleanlympics-0.3.4-win-x64.msix
 ```
+
+Do not install the certificate under **Current User** or **Personal**: MSIX installation requires it in the **Local Machine > Trusted Root Certification Authorities** store.
 
 The application is then available from the Start menu to all RDP users. Its shared database is created at `C:\Users\Public\Documents\Cleanlympics\data\cleanlympics.sqlite`, a location writable by interactive users and independent of the installed package.
 
